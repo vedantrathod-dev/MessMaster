@@ -102,20 +102,20 @@
                     {% endif %}
                   </td>
                   <td style="text-align: center;">
-                    <div style="display: inline-flex; background: #f1f5f9; border-radius: var(--radius-md); padding: 4px; gap: 6px;">
+                    <div style="display: inline-flex; background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 4px; gap: 6px;">
                       
                       <!-- Radio Present -->
                       <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; transition: var(--transition);">
                         <input type="radio" name="att_status_{{ s.student_id }}" value="Present" 
                           {% if s.attendance_status == 'Present' or s.attendance_status == 'Unmarked' %}checked{% endif %}>
-                        <span style="color: #065f46;">Present</span>
+                        <span style="color: var(--accent-green-text); font-weight: 700;">Present</span>
                       </label>
 
                       <!-- Radio Absent -->
                       <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; transition: var(--transition);">
                         <input type="radio" name="att_status_{{ s.student_id }}" value="Absent" 
                           {% if s.attendance_status == 'Absent' %}checked{% endif %}>
-                        <span style="color: #991b1b;">Absent</span>
+                        <span style="color: var(--accent-red-text); font-weight: 700;">Absent</span>
                       </label>
 
                     </div>
@@ -124,7 +124,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-secondary);">
                   No active students found for attendance.
                 </td>
               </tr>
@@ -134,7 +134,7 @@
       </div>
     </div>
 
-    <div class="panel-body" style="background-color: #f8fafc; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end;">
+    <div class="panel-body" style="background-color: var(--bg-card-elevated); border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end;">
       <button type="submit" class="btn btn-primary btn-lg">
         💾 Save & Update Attendance Records
       </button>

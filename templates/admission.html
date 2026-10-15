@@ -24,7 +24,7 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="student_id_preview">Generated Student ID</label>
-            <input type="text" class="form-control" id="student_id_preview" value="{{ next_student_id }}" readonly style="background-color: #f1f5f9; font-weight: 700; color: var(--primary);">
+            <input type="text" class="form-control" id="student_id_preview" value="{{ next_student_id }}" readonly style="background-color: var(--bg-card-elevated); font-weight: 700; color: var(--accent-orange); border: 1px solid var(--border-subtle);">
             <div class="form-helper">Unique system-generated identifier</div>
           </div>
 
@@ -59,9 +59,9 @@
           </div>
         </div>
 
-        <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 24px 0;">
+        <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 24px 0;">
 
-        <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+        <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--accent-orange); display: flex; align-items: center; gap: 8px;">
           <span>🍽️</span> Mess Plan & Duration
         </h4>
 
@@ -86,19 +86,19 @@
         </div>
 
         <!-- Dynamic Calculation Callout Box -->
-        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
+        <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
           <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; font-size: 14px;">
             <div>
-              <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; display: block;">CALCULATED EXPIRY DATE</span>
-              <strong id="expiryPreview" style="font-size: 18px; color: var(--primary-dark);">--</strong>
+              <span style="color: var(--text-secondary); font-size: 12px; font-weight: 600; display: block;">CALCULATED EXPIRY DATE</span>
+              <strong id="expiryPreview" style="font-size: 18px; color: var(--accent-orange);">--</strong>
             </div>
             <div>
-              <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; display: block;">TOTAL MESS CHARGES</span>
-              <strong style="font-size: 18px; color: var(--text-main);">{{ currency_symbol }}<span id="totalFeePreview">3200.00</span></strong>
+              <span style="color: var(--text-secondary); font-size: 12px; font-weight: 600; display: block;">TOTAL MESS CHARGES</span>
+              <strong style="font-size: 18px; color: var(--text-primary);">{{ currency_symbol }}<span id="totalFeePreview">3200.00</span></strong>
             </div>
             <div>
-              <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; display: block;">OUTSTANDING BALANCE</span>
-              <strong style="font-size: 18px; color: #b45309;">{{ currency_symbol }}<span id="balancePreview">0.00</span></strong>
+              <span style="color: var(--text-secondary); font-size: 12px; font-weight: 600; display: block;">OUTSTANDING BALANCE</span>
+              <strong style="font-size: 18px; color: var(--accent-amber);">{{ currency_symbol }}<span id="balancePreview">0.00</span></strong>
             </div>
           </div>
         </div>

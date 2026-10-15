@@ -4,10 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Payment Receipt #{{ payment.receipt_no }} - {{ mess_name }}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.2">
+  
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('messmaster_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.4">
   <style>
     body {
-      background-color: #f1f5f9;
+      background-color: var(--bg-main);
+      color: var(--text-primary);
       padding: 30px 16px;
     }
     .print-actions {
@@ -75,7 +84,7 @@
     </div>
 
     <!-- Student Details Box -->
-    <div style="background-color: #f8fafc; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 24px;">
+    <div style="background-color: var(--bg-card-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 24px;">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13.5px;">
         <div><strong>Student Name:</strong> {{ payment.student_name }}</div>
         <div><strong>Student ID:</strong> {{ payment.student_id }}</div>
@@ -107,7 +116,7 @@
             <strong>Current Payment Received</strong>
             <div style="font-size: 11.5px; color: var(--text-muted);">Via {{ payment.payment_method }} - {{ payment.notes or 'Fee installment' }}</div>
           </td>
-          <td style="text-align: right; font-weight: 700; color: #059669; font-size: 16px;">
+          <td style="text-align: right; font-weight: 700; color: var(--accent-green); font-size: 16px;">
             {{ currency_symbol }}{{ "%.2f"|format(payment.amount) }}
           </td>
         </tr>
@@ -117,7 +126,7 @@
         </tr>
         <tr class="receipt-total-row">
           <td style="padding-top: 14px;"><strong>Remaining Outstanding Balance</strong></td>
-          <td style="padding-top: 14px; text-align: right; color: {% if remaining_balance > 0 %}#b45309{% else %}#059669{% endif %}; font-size: 18px;">
+          <td style="padding-top: 14px; text-align: right; color: {% if remaining_balance > 0 %}var(--accent-amber){% else %}var(--accent-green){% endif %}; font-size: 18px;">
             <strong>{{ currency_symbol }}{{ "%.2f"|format(remaining_balance) }}</strong>
           </td>
         </tr>

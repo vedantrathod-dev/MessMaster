@@ -82,20 +82,20 @@
           Approved Absent-Day Extensions Report
         {% endif %}
       </h2>
-      <span class="badge" style="background:#f1f5f9; color:#475569;">{{ report_data|length }} Records</span>
+      <span class="badge badge-secondary">{{ report_data|length }} Records</span>
     </div>
-    <div style="font-size: 12px; color: var(--text-muted);">
+    <div style="font-size: 12px; color: var(--text-secondary);">
       {{ mess_name }} &bull; Generated on {{ today_date }}
     </div>
   </div>
 
   <!-- Summary Pills Bar -->
   {% if summary %}
-    <div class="panel-body" style="background: #f8fafc; border-bottom: 1px solid var(--card-border); padding: 14px 24px;">
+    <div class="panel-body" style="background: var(--bg-card-elevated); border-bottom: 1px solid var(--border-subtle); padding: 14px 24px;">
       <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 13.5px;">
         {% for k, v in summary.items() %}
           <div>
-            <span style="color: var(--text-muted); text-transform: uppercase; font-size: 11px; font-weight: 600;">{{ k.replace('_', ' ') }}:</span>
+            <span style="color: var(--text-secondary); text-transform: uppercase; font-size: 11px; font-weight: 600;">{{ k.replace('_', ' ') }}:</span>
             {% if 'amount' in k or 'pending' in k %}
               <strong>{{ currency_symbol }}{{ "%.2f"|format(v) }}</strong>
             {% else %}
@@ -163,8 +163,8 @@
                 <td>{{ r.full_name }}</td>
                 <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
                 <td>{{ r.total_marked }}</td>
-                <td style="color: #059669; font-weight: 600;">{{ r.present_days or 0 }}</td>
-                <td style="color: #dc2626; font-weight: 600;">{{ r.absent_days or 0 }}</td>
+                <td style="color: var(--accent-green); font-weight: 600;">{{ r.present_days or 0 }}</td>
+                <td style="color: var(--accent-red); font-weight: 600;">{{ r.absent_days or 0 }}</td>
                 <td>
                   {% if r.total_marked and r.total_marked > 0 %}
                     <strong>{{ "%.1f"|format((r.present_days / r.total_marked) * 100) }}%</strong>
@@ -195,9 +195,9 @@
                 <td>{{ r.payment_date }}</td>
                 <td><strong>{{ r.full_name }}</strong> ({{ r.student_id }})</td>
                 <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
-                <td style="color: #059669; font-weight: 700;">{{ currency_symbol }}{{ "%.2f"|format(r.amount) }}</td>
-                <td><span class="badge" style="background:#f1f5f9; color:#334155;">{{ r.payment_method }}</span></td>
-                <td style="font-size: 12px; color: var(--text-muted);">{{ r.notes or '--' }}</td>
+                <td style="color: var(--accent-green); font-weight: 700;">{{ currency_symbol }}{{ "%.2f"|format(r.amount) }}</td>
+                <td><span class="badge badge-secondary">{{ r.payment_method }}</span></td>
+                <td style="font-size: 12px; color: var(--text-secondary);">{{ r.notes or '--' }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -224,8 +224,8 @@
                 <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
                 <td><span class="badge badge-active">{{ r.status }}</span></td>
                 <td>{{ currency_symbol }}{{ "%.2f"|format(r.total_fee) }}</td>
-                <td style="color: #059669;">{{ currency_symbol }}{{ "%.2f"|format(r.paid) }}</td>
-                <td style="color: #b45309; font-weight: 700; font-size: 15px;">{{ currency_symbol }}{{ "%.2f"|format(r.pending_amount) }}</td>
+                <td style="color: var(--accent-green);">{{ currency_symbol }}{{ "%.2f"|format(r.paid) }}</td>
+                <td style="color: var(--accent-amber); font-weight: 700; font-size: 15px;">{{ currency_symbol }}{{ "%.2f"|format(r.pending_amount) }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -251,7 +251,7 @@
                 <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
                 <td>{{ r.start_date }} to {{ r.current_expiry_date }}</td>
                 <td><span class="badge badge-expired">{{ r.days_expired|int }} days ago</span></td>
-                <td style="color: {% if r.balance > 0 %}#b45309{% else %}#059669{% endif %}; font-weight: 700;">
+                <td style="color: {% if r.balance > 0 %}var(--accent-amber){% else %}var(--accent-green){% endif %}; font-weight: 700;">
                   {{ currency_symbol }}{{ "%.2f"|format(r.balance) }}
                 </td>
               </tr>
@@ -277,11 +277,11 @@
                 <td><strong>#ADJ-{{ r.id }}</strong></td>
                 <td><strong>{{ r.student_name }}</strong> ({{ r.student_id }})</td>
                 <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
-                <td><strong style="color: #059669;">+{{ r.credited_days }} Days Free Extension</strong></td>
+                <td><strong style="color: var(--accent-green);">+{{ r.credited_days }} Days Free Extension</strong></td>
                 <td>{{ r.original_expiry_date }}</td>
                 <td><strong>{{ r.updated_expiry_date }}</strong></td>
                 <td>{{ r.approved_date }}</td>
-                <td style="font-size: 12px; color: var(--text-muted);">{{ r.admin_notes or '--' }}</td>
+                <td style="font-size: 12px; color: var(--text-secondary);">{{ r.admin_notes or '--' }}</td>
               </tr>
             {% endfor %}
           </tbody>

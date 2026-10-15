@@ -10,7 +10,7 @@
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
       
       <div style="display: flex; gap: 18px; align-items: center;">
-        <div style="width: 64px; height: 64px; border-radius: var(--radius-lg); background: linear-gradient(135deg, #4f46e5, #0ea5e9); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800;">
+        <div style="width: 64px; height: 64px; border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--accent-amber), var(--accent-orange)); color: #0f1115; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800;">
           {{ student.full_name[0] }}
         </div>
         <div>
@@ -24,7 +24,7 @@
             {% elif student.status == 'Expired' %}
               <span class="badge badge-expired">Expired</span>
             {% else %}
-              <span class="badge" style="background:#e2e8f0; color:#475569;">Deactivated</span>
+              <span class="badge badge-secondary">Deactivated</span>
             {% endif %}
           </div>
           <div style="font-size: 13.5px; color: var(--text-muted); margin-top: 4px;">
@@ -94,7 +94,7 @@
       <span class="stat-label">Pending Dues</span>
       <div class="stat-icon {% if balance > 0 %}warning{% else %}success{% endif %}">💰</div>
     </div>
-    <div class="stat-value" style="color: {% if balance > 0 %}#b45309{% else %}#059669{% endif %};">
+    <div class="stat-value" style="color: {% if balance > 0 %}var(--accent-amber){% else %}var(--accent-green){% endif %};">
       {{ currency_symbol }}{{ "%.2f"|format(balance) }}
     </div>
     <div class="stat-footer">
@@ -173,8 +173,8 @@
                 <tr>
                   <td><strong>{{ p.receipt_no }}</strong></td>
                   <td>{{ p.payment_date }}</td>
-                  <td style="font-weight: 700; color: #059669;">{{ currency_symbol }}{{ "%.2f"|format(p.amount) }}</td>
-                  <td><span class="badge" style="background:#f1f5f9; color:#334155;">{{ p.payment_method }}</span></td>
+                  <td style="font-weight: 700; color: var(--accent-green);">{{ currency_symbol }}{{ "%.2f"|format(p.amount) }}</td>
+                  <td><span class="badge badge-secondary">{{ p.payment_method }}</span></td>
                   <td>
                     <a href="{{ url_for('view_receipt', receipt_no=p.receipt_no) }}" class="btn btn-outline btn-sm" target="_blank" title="Print Receipt">
                       🖨️ Receipt
@@ -276,7 +276,7 @@
                     {% if pl.is_current %}
                       <span class="badge badge-active">Current Active</span>
                     {% elif pl.status == 'Renewed' %}
-                      <span class="badge" style="background:#e0f2fe; color:#0369a1;">Renewed</span>
+                      <span class="badge badge-info">Renewed</span>
                     {% else %}
                       <span class="badge badge-expired">Expired</span>
                     {% endif %}

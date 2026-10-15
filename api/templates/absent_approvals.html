@@ -5,15 +5,15 @@
 
 {% block content %}
 <!-- Policy Rule Callout Banner -->
-<div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--primary); background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);">
+<div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--accent-orange); background: var(--bg-card);">
   <div class="panel-body">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
       <div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 20px;">📜</span>
-          <h3 style="font-size: 16px; font-weight: 700;">Active Policy Rule: Minimum {{ threshold }} Consecutive Absent Days</h3>
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Active Policy Rule: Minimum {{ threshold }} Consecutive Absent Days</h3>
         </div>
-        <p style="font-size: 13.5px; color: var(--text-muted); margin-top: 4px;">
+        <p style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px;">
           Students absent for <strong>{{ threshold }} or more consecutive days</strong> qualify for plan extension equivalent to their absent duration.
           Approval extends the mess plan expiry date automatically without charging extra fees.
         </p>
@@ -56,8 +56,8 @@
             {% for streak in eligible_streaks %}
               <tr>
                 <td>
-                  <strong><a href="{{ url_for('student_profile', student_id=streak.student_id) }}" style="color: var(--primary);">{{ streak.student_name }}</a></strong>
-                  <div style="font-size: 11px; color: var(--text-muted);">{{ streak.student_id }}</div>
+                  <strong><a href="{{ url_for('student_profile', student_id=streak.student_id) }}" style="color: var(--accent-orange);">{{ streak.student_name }}</a></strong>
+                  <div style="font-size: 11px; color: var(--text-secondary);">{{ streak.student_id }}</div>
                 </td>
                 <td>
                   <span class="badge {% if streak.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
@@ -73,10 +73,10 @@
                   <span style="font-size: 12.5px; font-weight: 500;">{{ streak.absent_dates_str }}</span>
                 </td>
                 <td>
-                  <span style="color: var(--text-muted);">{{ streak.original_expiry_date }}</span>
+                  <span style="color: var(--text-secondary);">{{ streak.original_expiry_date }}</span>
                 </td>
                 <td>
-                  <strong style="color: #059669; font-size: 14px;">{{ streak.proposed_expiry_date }}</strong>
+                  <strong style="color: var(--accent-green); font-size: 14px;">{{ streak.proposed_expiry_date }}</strong>
                 </td>
                 <td>
                   <span class="badge badge-active">+{{ streak.credited_days }} Days Free Extension</span>
@@ -138,14 +138,14 @@
               <tr>
                 <td><strong>#ADJ-{{ adj.id }}</strong></td>
                 <td>
-                  <strong><a href="{{ url_for('student_profile', student_id=adj.student_id) }}" style="color: var(--primary);">{{ adj.student_name }}</a></strong>
-                  <div style="font-size: 11px; color: var(--text-muted);">{{ adj.student_id }} &bull; {{ adj.mess_type }}</div>
+                  <strong><a href="{{ url_for('student_profile', student_id=adj.student_id) }}" style="color: var(--accent-orange);">{{ adj.student_name }}</a></strong>
+                  <div style="font-size: 11px; color: var(--text-secondary);">{{ adj.student_id }} &bull; {{ adj.mess_type }}</div>
                 </td>
                 <td>
                   <span style="font-size: 12px;">{{ adj.absent_dates_json }}</span>
                 </td>
                 <td>
-                  <strong style="color: #059669;">+{{ adj.credited_days }} Days</strong>
+                  <strong style="color: var(--accent-green);">+{{ adj.credited_days }} Days</strong>
                 </td>
                 <td>{{ adj.original_expiry_date }}</td>
                 <td><strong>{{ adj.updated_expiry_date }}</strong></td>
@@ -159,12 +159,12 @@
                   {% endif %}
                 </td>
                 <td>{{ adj.approved_date or adj.requested_date }}</td>
-                <td style="font-size: 12px; color: var(--text-muted);">{{ adj.admin_notes or '--' }}</td>
+                <td style="font-size: 12px; color: var(--text-secondary);">{{ adj.admin_notes or '--' }}</td>
               </tr>
             {% endfor %}
           {% else %}
             <tr>
-              <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-secondary);">
                 No adjustment records found.
               </td>
             </tr>

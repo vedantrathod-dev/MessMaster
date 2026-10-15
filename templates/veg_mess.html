@@ -20,7 +20,7 @@
       <span class="stat-label">Active Veg Diners</span>
       <div class="stat-icon success">🟢</div>
     </div>
-    <div class="stat-value" style="color: #059669;">{{ active_veg }}</div>
+    <div class="stat-value" style="color: var(--accent-green);">{{ active_veg }}</div>
     <div class="stat-footer">Currently eligible for meals</div>
   </div>
 
@@ -121,7 +121,7 @@
                   {% elif s.remaining_days <= 3 %}
                     <span class="badge badge-warning">⚠️ {{ s.remaining_days|int }} days</span>
                   {% else %}
-                    <span style="font-weight: 600; color: #059669;">{{ s.remaining_days|int }} days</span>
+                    <span style="font-weight: 600; color: var(--accent-green);">{{ s.remaining_days|int }} days</span>
                   {% endif %}
                 </td>
                 <td><strong>{{ s.current_expiry_date }}</strong></td>
