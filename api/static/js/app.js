@@ -4,28 +4,68 @@
 
 document.addEventListener('DOMContentLoaded', function () {
   // 0. Dark / Light Theme Toggle System
-  const themeToggleBtn = document.getElementById('themeToggleBtn');
-  const themeToggleIcon = document.getElementById('themeToggleIcon');
-
   function updateThemeUI(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('messmaster_theme', theme);
-    if (themeToggleIcon) {
-      themeToggleIcon.textContent = theme === 'light' ? '☀️' : '🌙';
-    }
+    document.querySelectorAll('#themeToggleIcon, .themeToggleIcon, .studentThemeIcon, #studentThemeToggleBtn span').forEach(function(icon) {
+      icon.textContent = theme === 'light' ? '☀️' : '🌙';
+    });
   }
 
   // Sync icon with currently active theme
   const initialTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('messmaster_theme') || 'dark';
   updateThemeUI(initialTheme);
 
-  if (themeToggleBtn) {
-    themeToggleBtn.addEventListener('click', function () {
+  document.querySelectorAll('#themeToggleBtn, #studentThemeToggleBtn, .theme-toggle-btn').forEach(function(btn) {
+    btn.addEventListener('click', function () {
       const activeTheme = document.documentElement.getAttribute('data-theme') || 'dark';
       const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
       updateThemeUI(nextTheme);
     });
+  });
+
+  // Student Navbar Mobile Menu Toggle
+  const studentMobileToggle = document.getElementById('studentMobileToggle');
+  const studentNavMenu = document.getElementById('studentNavMenu');
+  if (studentMobileToggle && studentNavMenu) {
+    studentMobileToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      studentNavMenu.classList.toggle('mobile-open');
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!studentNavMenu.contains(e.target) && !studentMobileToggle.contains(e.target)) {
+        studentNavMenu.classList.remove('mobile-open');
+      }
+    });
+
+    studentNavMenu.querySelectorAll('.student-nav-item').forEach(function(link) {
+      link.addEventListener('click', function() {
+        if (window.innerWidth <= 1024) {
+          studentNavMenu.classList.remove('mobile-open');
+        }
+      });
+    });
   }
+
+  // Global smooth scroll helper for Student Navbar
+  window.scrollToSection = function(event, sectionId) {
+    const target = document.getElementById(sectionId);
+    if (target) {
+      event.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll('.student-nav-item').forEach(function(item) {
+        item.classList.remove('active');
+      });
+      if (event.currentTarget) {
+        event.currentTarget.classList.add('active');
+      }
+      if (studentNavMenu) {
+        studentNavMenu.classList.remove('mobile-open');
+      }
+    }
+  };
 
   // Keyboard shortcut: ⌘ + Space or Ctrl + Space focuses Search
   const searchInput = document.getElementById('globalSearchInput');

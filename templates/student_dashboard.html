@@ -57,7 +57,7 @@
 <!-- ===================================================================
      1. ATTENDANCE QR CODES SECTION (LUNCH & DINNER)
      =================================================================== -->
-<div class="panel" style="margin-bottom: 24px; border: 1px solid rgba(255, 106, 0, 0.25); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);">
+<div class="panel" id="qrPassesSection" style="margin-bottom: 24px; border: 1px solid rgba(255, 106, 0, 0.25); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);">
   <div class="panel-header" style="background: linear-gradient(90deg, rgba(255, 106, 0, 0.08) 0%, transparent 100%);">
     <div>
       <h3 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
@@ -164,7 +164,7 @@
 <!-- ===================================================================
      2. REMAINING DAYS & FINANCIAL STATUS CARDS (PAID VS REMAINING)
      =================================================================== -->
-<div class="stats-grid" style="margin-bottom: 24px;">
+<div class="stats-grid" id="financialSection" style="margin-bottom: 24px;">
   
   <!-- DAYS REMAINING METER -->
   <div class="stat-card" style="border-left: 3px solid var(--accent-orange);">
@@ -255,7 +255,7 @@
 <div class="dashboard-grid">
   
   <!-- Left Column: Payment Receipts History -->
-  <div class="panel">
+  <div class="panel" id="receiptsSection">
     <div class="panel-header">
       <h3 class="panel-title">🧾 Payment Receipts & Dues History</h3>
       {% if balance > 0 %}
@@ -307,7 +307,7 @@
   </div>
 
   <!-- Right Column: Recent Dining Attendance -->
-  <div class="panel">
+  <div class="panel" id="attendanceSection">
     <div class="panel-header">
       <h3 class="panel-title">📅 Meal Attendance History (Last 30 Days)</h3>
       <span class="badge badge-secondary">Logged Days</span>

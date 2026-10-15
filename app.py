@@ -474,9 +474,37 @@ def api_qr_checkin():
         'status': 'Present'
     })
 
-# ----------------- ADMIN DASHBOARD ----------------- #
+# ----------------- PUBLIC LANDING PAGE ----------------- #
 
 @app.route('/')
+@app.route('/landing')
+def home():
+    if 'user_id' in session:
+        if session.get('role') == 'student':
+            return redirect(url_for('student_dashboard'))
+        return redirect(url_for('dashboard'))
+
+    database.update_all_mess_expiries()
+    currency_symbol = database.get_setting('currency_symbol', '₹')
+    default_veg = float(database.get_setting('veg_monthly_fee', '3200'))
+    default_nonveg = float(database.get_setting('nonveg_monthly_fee', '4200'))
+    mess_name = database.get_setting('mess_name', 'Campus Royal Mess & Dining Hall')
+    college_name = database.get_setting('college_name', 'Engineering & Technology Campus')
+    contact_phone = database.get_setting('contact_phone', '+91 98765 43210')
+    contact_email = database.get_setting('contact_email', 'mess-admin@campus.edu')
+
+    return render_template('landing.html',
+        currency_symbol=currency_symbol,
+        default_veg=default_veg,
+        default_nonveg=default_nonveg,
+        mess_name=mess_name,
+        college_name=college_name,
+        contact_phone=contact_phone,
+        contact_email=contact_email
+    )
+
+# ----------------- ADMIN DASHBOARD ----------------- #
+
 @app.route('/dashboard')
 @login_required
 def dashboard():

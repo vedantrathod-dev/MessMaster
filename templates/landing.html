@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MessMaster - Professional Campus Mess & Dining Management System. Pure Veg & Non-Veg Plans, QR Attendance, and Absent-Day Credits.">
+  <title>{{ mess_name }} &bull; Next-Gen Campus Dining</title>
+  
+  <!-- Zero-flash theme script -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('messmaster_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.5">
+  <style>
+    /* Landing Page Specific Enhancements */
+    .landing-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background-color: rgba(19, 17, 15, 0.85);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 32px;
+    }
+    [data-theme="light"] .landing-header {
+      background-color: rgba(255, 255, 255, 0.88);
+    }
+    .landing-nav-container {
+      max-width: 1320px;
+      margin: 0 auto;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .landing-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .landing-nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .landing-nav-link {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .landing-nav-link:hover {
+      color: var(--accent-orange);
+    }
+    .landing-hero {
+      position: relative;
+      padding: 90px 24px 80px;
+      text-align: center;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 20%, rgba(255, 106, 0, 0.16) 0%, rgba(13, 12, 10, 0.98) 75%);
+    }
+    [data-theme="light"] .landing-hero {
+      background: radial-gradient(circle at 50% 15%, rgba(234, 88, 12, 0.12) 0%, #f7f6f2 75%);
+    }
+    .hero-glow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 106, 0, 0.12);
+      border: 1px solid rgba(255, 106, 0, 0.35);
+      border-radius: 9999px;
+      padding: 6px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-orange);
+      margin-bottom: 24px;
+      box-shadow: 0 0 20px rgba(255, 106, 0, 0.2);
+    }
+    .hero-headline {
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.15;
+      color: var(--text-primary);
+      max-width: 860px;
+      margin: 0 auto 20px;
+      letter-spacing: -0.03em;
+    }
+    .hero-highlight {
+      background: linear-gradient(135deg, #ff6a00 0%, #ff9800 50%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 17px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      max-width: 720px;
+      margin: 0 auto 36px;
+    }
+    .hero-cta-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 50px;
+    }
+    .btn-hero-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-orange);
+      color: #ffffff;
+      padding: 14px 28px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 10px 25px rgba(255, 106, 0, 0.45);
+      transition: var(--transition);
+    }
+    .btn-hero-primary:hover {
+      background: var(--accent-orange-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 14px 32px rgba(255, 106, 0, 0.6);
+    }
+    .btn-hero-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      padding: 14px 26px;
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .btn-hero-secondary:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+    }
+    .hero-mockup-wrapper {
+      max-width: 980px;
+      margin: 0 auto;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: var(--bg-card);
+      box-shadow: 0 25px 80px -15px rgba(0, 0, 0, 0.8), 0 0 1px 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      padding: 24px;
+      text-align: left;
+    }
+    .landing-section {
+      padding: 80px 24px;
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 50px;
+    }
+    .section-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-orange);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+    .section-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+    .feature-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 30px;
+      transition: var(--transition);
+      position: relative;
+    }
+    .feature-card:hover {
+      border-color: rgba(255, 106, 0, 0.4);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+    }
+    .feature-icon-box {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 20px;
+      background: rgba(255, 106, 0, 0.1);
+      border: 1px solid rgba(255, 106, 0, 0.25);
+    }
+    .feature-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .feature-desc {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 28px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .pricing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 38px 32px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .pricing-card.featured {
+      border: 2px solid var(--accent-orange);
+      box-shadow: 0 12px 40px rgba(234, 88, 12, 0.25);
+    }
+    .popular-pill {
+      position: absolute;
+      top: -14px;
+      right: 28px;
+      background: var(--accent-orange);
+      color: #ffffff;
+      padding: 4px 14px;
+      border-radius: 9999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .steps-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .step-item {
+      background: var(--bg-card-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      position: relative;
+    }
+    .step-number {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--accent-orange);
+      margin-bottom: 12px;
+      opacity: 0.85;
+    }
+    .stats-banner {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 44px 32px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      text-align: center;
+      margin: 60px 0;
+    }
+    .stats-number {
+      font-size: 38px;
+      font-weight: 800;
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .stats-label {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .landing-footer {
+      border-top: 1px solid var(--border-subtle);
+      background-color: var(--bg-card);
+      padding: 50px 24px 30px;
+    }
+    .footer-container {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 32px;
+    }
+    @media (max-width: 768px) {
+      .hero-headline {
+        font-size: 32px;
+      }
+      .landing-nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===================================================================
+       LANDING TOP NAVBAR
+       =================================================================== -->
+  <header class="landing-header">
+    <div class="landing-nav-container">
+      
+      <!-- Brand -->
+      <a href="{{ url_for('home') }}" class="landing-brand">
+        <div class="brand-emerald-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2a4 4 0 0 1 4 4c0 2.2-1.8 4-4 4a4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/>
+            <path d="M2 12a4 4 0 0 1 4-4c2.2 0 4 1.8 4 4a4 4 0 0 1-4 4 4 4 0 0 1-4-4z"/>
+            <path d="M12 22a4 4 0 0 1-4-4c0-2.2 1.8-4 4-4a4 4 0 0 1 4 4 4 4 0 0 1-4 4z"/>
+            <path d="M22 12a4 4 0 0 1-4 4c-2.2 0-4-1.8-4-4a4 4 0 0 1 4-4 4 4 0 0 1 4 4z"/>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <span class="brand-name">MessMaster</span>
+          <span class="brand-sub">Campus Dining Facility</span>
+        </div>
+      </a>
+
+      <!-- Navigation links -->
+      <nav class="landing-nav-links">
+        <a href="#features" class="landing-nav-link">Features</a>
+        <a href="#plans" class="landing-nav-link">Dining Plans</a>
+        <a href="#how-it-works" class="landing-nav-link">How It Works</a>
+        <a href="{{ url_for('login') }}" class="landing-nav-link">Sign In</a>
+      </nav>
+
+      <!-- Right Action Buttons -->
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button class="topbar-circle-btn" id="themeToggleBtn" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
+          <span id="themeToggleIcon">🌙</span>
+        </button>
+
+        <a href="{{ url_for('login') }}" class="btn btn-secondary btn-sm">
+          <span>🔐</span> Sign In
+        </a>
+
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-sm">
+          <span>🚀</span> Student Register
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================
+       HERO SECTION
+       =================================================================== -->
+  <section class="landing-hero">
+    <div class="hero-glow-badge">
+      <span>✨</span> The New Standard in College Dining Management
+    </div>
+
+    <h1 class="hero-headline">
+      Smart Campus Dining with <span class="hero-highlight">Instant QR Passes</span> & Flexible Plans
+    </h1>
+
+    <p class="hero-subtitle">
+      Say goodbye to paper tokens and messy registers. Choose Pure Veg or Non-Veg meals, present your personalized Lunch & Dinner QR code, and get automatic absence extension credits.
+    </p>
+
+    <div class="hero-cta-group">
+      <a href="{{ url_for('register') }}" class="btn-hero-primary">
+        <span>🥗</span> Register as Student & Choose Meal
+      </a>
+      <a href="{{ url_for('login') }}" class="btn-hero-secondary">
+        <span>👨‍💼</span> Administrator Portal
+      </a>
+    </div>
+
+    <!-- Live Interactive Mockup Showcase -->
+    <div class="hero-mockup-wrapper">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 16px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--gradient-amber-card); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px;">
+            AS
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 16px; color: var(--text-primary);">Aarav Sharma</div>
+            <div style="font-size: 12px; color: var(--text-secondary);">Student ID: STU20260001 &bull; Engineering Campus</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <span class="badge badge-veg">🥗 Pure Veg Mess</span>
+          <span class="badge badge-active">🟢 Active Dining</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+          <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Mess Expiry</div>
+          <div style="font-size: 20px; font-weight: 800; color: var(--accent-orange); margin-top: 4px;">28 Days Left</div>
+          <div style="font-size: 11px; color: var(--accent-green); margin-top: 2px;">+3d absence extension credited</div>
+        </div>
+
+        <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+          <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Fee Paid</div>
+          <div style="font-size: 20px; font-weight: 800; color: var(--accent-green); margin-top: 4px;">{{ currency_symbol }}{{ "%.0f"|format(default_veg) }}</div>
+          <div style="font-size: 11px; color: var(--accent-green); margin-top: 2px;">Fully Paid &bull; Receipt Issued</div>
+        </div>
+
+        <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+          <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">QR Check-In Status</div>
+          <div style="font-size: 16px; font-weight: 700; color: var(--accent-green); margin-top: 6px;">🌞 Lunch: Verified</div>
+          <div style="font-size: 13px; font-weight: 600; color: var(--accent-amber); margin-top: 2px;">🌙 Dinner: Ready to Scan</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       FEATURES SECTION
+       =================================================================== -->
+  <section class="landing-section" id="features">
+    <div class="section-header">
+      <div class="section-badge">System Capabilities</div>
+      <h2 class="section-title">Built for Modern Campus Life</h2>
+      <p class="section-desc">Everything needed to run high-volume college dining halls with transparency, zero food wastage, and complete peace of mind.</p>
+    </div>
+
+    <div class="feature-cards-grid">
+      <!-- Feature 1 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">🎫</div>
+        <h3 class="feature-title">Lunch & Dinner QR Passes</h3>
+        <p class="feature-desc">Every student receives live dynamic QR codes for lunch and dinner check-ins, allowing counter staff to verify dining eligibility in under a second.</p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">🥗</div>
+        <h3 class="feature-title">Pure Veg & Non-Veg Plans</h3>
+        <p class="feature-desc">Students select their preference upon registration: Pure Vegetarian dining or Non-Veg meal plans with weekly chicken and egg specials.</p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">⏱️</div>
+        <h3 class="feature-title">Automatic Absence Extension</h3>
+        <p class="feature-desc">Going home or sick? Missing 3 or more consecutive days automatically triggers our adjustment engine to credit extended dining days onto the student's plan.</p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">💳</div>
+        <h3 class="feature-title">Transparent Dues & Receipts</h3>
+        <p class="feature-desc">Students can view exactly how much money they have paid, outstanding dues, and generate official printable payment receipts anytime.</p>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">📊</div>
+        <h3 class="feature-title">Live Kitchen Headcount Forecast</h3>
+        <p class="feature-desc">Mess administrators view live daily attendance statistics, active meal quotas, and upcoming renewals to minimize food waste.</p>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="feature-card">
+        <div class="feature-icon-box">🌓</div>
+        <h3 class="feature-title">Flawless Dark & Light Themes</h3>
+        <p class="feature-desc">Crafted with a luxury obsidian and radiant amber dark mode, alongside a warm alabaster light mode for perfect day or night readability.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       DINING PLANS & PRICING
+       =================================================================== -->
+  <section class="landing-section" id="plans" style="background: var(--bg-card-elevated); border-radius: var(--radius-xl); border: 1px solid var(--border-color); margin-bottom: 80px;">
+    <div class="section-header">
+      <div class="section-badge">Dining Subscriptions</div>
+      <h2 class="section-title">Transparent Meal Plans</h2>
+      <p class="section-desc">Choose the plan that suits your appetite. Flexible durations available for 30, 60, or 90 days.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <!-- Plan 1: Veg -->
+      <div class="pricing-card">
+        <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">🥗 Pure Veg Mess</div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Nutritious, pure vegetarian home-style meals</div>
+        
+        <div style="font-size: 38px; font-weight: 800; color: var(--accent-orange); margin-bottom: 24px;">
+          {{ currency_symbol }}{{ "%.0f"|format(default_veg) }} <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">/ 30 days</span>
+        </div>
+
+        <ul style="list-style: none; padding: 0; margin: 0 0 30px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: var(--text-secondary);">
+          <li>✅ Unlimited Breakfast, Lunch & Dinner</li>
+          <li>✅ Daily Dal, Rice, 2 Sabzis & Hot Rotis</li>
+          <li>✅ Lunch & Dinner Digital QR Passes</li>
+          <li>✅ 3+ Days Consecutive Absence Credit Guarantee</li>
+          <li>✅ Instant Digital Payment Receipts</li>
+        </ul>
+
+        <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 13px; text-align: center; text-decoration: none;">
+          Select Pure Veg Plan
+        </a>
+      </div>
+
+      <!-- Plan 2: Non-Veg -->
+      <div class="pricing-card featured">
+        <div class="popular-pill">MOST POPULAR</div>
+        <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">🍗 Non-Veg Dining Plan</div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">Full vegetarian menu + Chicken & Egg specials</div>
+
+        <div style="font-size: 38px; font-weight: 800; color: var(--accent-orange); margin-bottom: 24px;">
+          {{ currency_symbol }}{{ "%.0f"|format(default_nonveg) }} <span style="font-size: 14px; font-weight: 500; color: var(--text-secondary);">/ 30 days</span>
+        </div>
+
+        <ul style="list-style: none; padding: 0; margin: 0 0 30px; display: flex; flex-direction: column; gap: 12px; font-size: 14px; color: var(--text-secondary);">
+          <li>✅ Unlimited Daily Vegetarian Breakfast, Lunch & Dinner</li>
+          <li>✅ 3 to 4 Weekly Chicken Curry / Egg Delicacies</li>
+          <li>✅ High-Protein Menu for Active Students</li>
+          <li>✅ Lunch & Dinner Digital QR Passes</li>
+          <li>✅ 3+ Days Consecutive Absence Credit Guarantee</li>
+        </ul>
+
+        <a href="{{ url_for('register') }}" class="btn btn-primary" style="padding: 13px; text-align: center; text-decoration: none;">
+          Select Non-Veg Plan
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       HOW IT WORKS SECTION
+       =================================================================== -->
+  <section class="landing-section" id="how-it-works">
+    <div class="section-header">
+      <div class="section-badge">Simple 3-Step Process</div>
+      <h2 class="section-title">How It Works for Students</h2>
+      <p class="section-desc">Get started in under two minutes and enjoy seamless campus dining.</p>
+    </div>
+
+    <div class="steps-row">
+      <div class="step-item">
+        <div class="step-number">01</div>
+        <h4 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Create Account & Choose Meal</h4>
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5;">Register your student account, select Veg or Non-Veg, and choose your preferred duration.</p>
+      </div>
+
+      <div class="step-item">
+        <div class="step-number">02</div>
+        <h4 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Access Live QR Passes</h4>
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5;">Open your student dashboard anytime on your phone to display your Lunch and Dinner QR dining pass.</p>
+      </div>
+
+      <div class="step-item">
+        <div class="step-number">03</div>
+        <h4 style="font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Track Days & Automatic Credits</h4>
+        <p style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5;">Monitor your days remaining, track paid fees, and receive automatic plan extension credits for excused absences.</p>
+      </div>
+    </div>
+
+    <!-- Stats Banner -->
+    <div class="stats-banner">
+      <div>
+        <div class="stats-number" style="color: var(--accent-orange);">5,000+</div>
+        <div class="stats-label">Daily Meals Served</div>
+      </div>
+      <div>
+        <div class="stats-number" style="color: var(--accent-green);">&lt; 1 sec</div>
+        <div class="stats-label">QR Check-in Verification</div>
+      </div>
+      <div>
+        <div class="stats-number" style="color: #38bdf8;">100%</div>
+        <div class="stats-label">Automated Absence Credits</div>
+      </div>
+      <div>
+        <div class="stats-number" style="color: var(--accent-amber);">0</div>
+        <div class="stats-label">Paper Wastage</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       FOOTER
+       =================================================================== -->
+  <footer class="landing-footer">
+    <div class="footer-container">
+      <div>
+        <div style="font-weight: 800; font-size: 20px; color: var(--text-primary); margin-bottom: 6px;">
+          MessMaster
+        </div>
+        <div style="font-size: 13px; color: var(--text-secondary); max-width: 320px; line-height: 1.5;">
+          {{ college_name }} &bull; Next-generation campus mess and student dining management system.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary); margin-bottom: 12px;">Dining Desk Contact</div>
+        <div style="font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 6px;">
+          <span>📞 Phone: {{ contact_phone }}</span>
+          <span>📧 Email: {{ contact_email }}</span>
+          <span>🏢 Facility: {{ mess_name }}</span>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight: 700; font-size: 14px; color: var(--text-primary); margin-bottom: 12px;">Portals</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <a href="{{ url_for('register') }}" style="color: var(--accent-orange); text-decoration: none; font-size: 13.5px; font-weight: 600;">Student Registration</a>
+          <a href="{{ url_for('login') }}" style="color: var(--text-secondary); text-decoration: none; font-size: 13.5px;">Administrator Sign In</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width: 1320px; margin: 36px auto 0; padding-top: 20px; border-top: 1px solid var(--border-subtle); text-align: center; font-size: 12px; color: var(--text-tertiary);">
+      &copy; 2026 {{ mess_name }}. All rights reserved. Powered by MessMaster.
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -21,16 +21,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <div class="app-container">
-    
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar" id="appSidebar">
-      <div class="sidebar-header">
-        <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1;">
+  {% if session.get('role') == 'student' or request.endpoint == 'student_dashboard' %}
+    <!-- ===================================================================
+         STUDENT USER TOP NAVBAR (HORIZONTAL LUXURY NAVIGATION)
+         =================================================================== -->
+    <header class="student-navbar">
+      <div class="student-navbar-inner">
+        
+        <!-- Brand Logo & Portal Tag -->
+        <a href="{{ url_for('student_dashboard') }}" class="student-nav-brand">
           <div class="brand-emerald-icon" title="MessMaster Campus Dining">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2a4 4 0 0 1 4 4c0 2.2-1.8 4-4 4a4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/>
-              <path d="M2 12a4 4 0 0 1 4-4c2.2 0 4 1.8 4 4a4 4 0 0 1-4 4 4 4 0 0 1-4-4z"/>
+              <path d="M2 12a4 4 0 0 1 4-4c2.2 0 4 1.8 4 4a4 4 0 0 1-4 4 4 4 0 0 1 4 4z"/>
               <path d="M12 22a4 4 0 0 1-4-4c0-2.2 1.8-4 4-4a4 4 0 0 1 4 4 4 4 0 0 1-4 4z"/>
               <path d="M22 12a4 4 0 0 1-4 4c-2.2 0-4-1.8-4-4a4 4 0 0 1 4-4 4 4 0 0 1 4 4z"/>
             </svg>
@@ -39,42 +42,123 @@
             <span class="brand-name">MessMaster</span>
             <span class="brand-sub">Campus Dining</span>
           </div>
+          <span class="student-portal-tag">Student Portal</span>
+        </a>
+
+        <!-- Horizontal Nav Links -->
+        <nav class="student-nav-menu" id="studentNavMenu">
+          <a href="{{ url_for('student_dashboard') }}" class="student-nav-item active" id="nav-student-dashboard">
+            <span class="student-nav-icon">📊</span>
+            <span>My Dashboard</span>
+          </a>
+
+          <a href="#qrPassesSection" class="student-nav-item" id="nav-qr-pass" onclick="scrollToSection(event, 'qrPassesSection')">
+            <span class="student-nav-icon">🎫</span>
+            <span>Lunch &amp; Dinner QR</span>
+          </a>
+
+          <a href="#financialSection" class="student-nav-item" id="nav-my-payments" onclick="scrollToSection(event, 'financialSection')">
+            <span class="student-nav-icon">💳</span>
+            <span>My Dues &amp; Receipts</span>
+          </a>
+
+          <a href="#attendanceSection" class="student-nav-item" id="nav-my-attendance" onclick="scrollToSection(event, 'attendanceSection')">
+            <span class="student-nav-icon">📅</span>
+            <span>My Attendance</span>
+          </a>
+        </nav>
+
+        <!-- Right Side User Profile & Actions -->
+        <div class="student-nav-actions">
+          {% if session.get('role') != 'student' %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-sm hide-on-mobile" style="border-color: var(--accent-orange); color: var(--accent-orange); padding: 6px 12px;" title="Back to Admin Dashboard">
+              ⚡ Admin Console
+            </a>
+          {% endif %}
+
+          <!-- Circular Dark / Light Mode Switcher -->
+          <button class="topbar-circle-btn" id="studentThemeToggleBtn" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
+            <span class="studentThemeIcon">🌙</span>
+          </button>
+
+          <!-- User Profile Chip -->
+          <div class="student-user-chip" title="{{ session.get('full_name') or 'Student Profile' }}">
+            <div class="student-avatar">
+              {{ (session.get('full_name', 'Student')[:2])|upper }}
+            </div>
+            <div class="student-user-meta hide-on-mobile">
+              <span class="student-user-name">{{ session.get('full_name') or 'Student Resident' }}</span>
+              <span class="student-user-sub">{% if session.get('student_id') %}{{ session.get('student_id') }}{% else %}Resident{% endif %}</span>
+            </div>
+          </div>
+
+          <!-- Sign Out Button -->
+          <a href="{{ url_for('logout') }}" class="btn-student-logout hide-on-mobile" title="Sign Out">
+            <span>🚪</span>
+            <span>Sign Out</span>
+          </a>
+
+          <!-- Mobile Hamburger Toggle -->
+          <button class="student-mobile-toggle" id="studentMobileToggle" aria-label="Toggle Navigation">
+            <span>☰</span>
+          </button>
         </div>
-        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Navigation">&times;</button>
+
       </div>
+    </header>
 
-      <nav class="sidebar-nav">
-        {% if session.get('role') == 'student' %}
-          <div class="nav-section-title">Student Portal</div>
-          
-          <a href="{{ url_for('student_dashboard') }}" class="nav-item {% if request.endpoint == 'student_dashboard' %}active{% endif %}" id="nav-student-dashboard">
-            <div class="nav-item-content">
-              <span class="icon">📊</span>
-              <span>My Dashboard</span>
+    <!-- Student Main Content Container (Full Width, Centered) -->
+    <main class="student-main-content">
+      <div class="student-container">
+        
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-container">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                  <span>{{ message }}</span>
+                  <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+                </div>
+              {% endfor %}
             </div>
-          </a>
+          {% endif %}
+        {% endwith %}
 
-          <a href="{{ url_for('student_dashboard') }}" class="nav-item" id="nav-qr-pass">
-            <div class="nav-item-content">
-              <span class="icon">🎫</span>
-              <span>Lunch & Dinner QR</span>
-            </div>
-          </a>
+        <!-- Student Body Content -->
+        {% block student_content %}
+          {{ self.content() }}
+        {% endblock %}
+      </div>
+    </main>
 
-          <a href="{{ url_for('student_dashboard') }}" class="nav-item" id="nav-my-payments">
-            <div class="nav-item-content">
-              <span class="icon">💳</span>
-              <span>My Dues & Receipts</span>
+  {% else %}
+    <!-- ===================================================================
+         ADMINISTRATION SIDEBAR + TOPBAR LAYOUT
+         =================================================================== -->
+    <div class="app-container">
+      
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar" id="appSidebar">
+        <div class="sidebar-header">
+          <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1;">
+            <div class="brand-emerald-icon" title="MessMaster Campus Dining">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2a4 4 0 0 1 4 4c0 2.2-1.8 4-4 4a4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/>
+                <path d="M2 12a4 4 0 0 1 4-4c2.2 0 4 1.8 4 4a4 4 0 0 1-4 4 4 4 0 0 1 4 4z"/>
+                <path d="M12 22a4 4 0 0 1-4-4c0-2.2 1.8-4 4-4a4 4 0 0 1 4 4 4 4 0 0 1 4 4z"/>
+                <path d="M22 12a4 4 0 0 1-4 4c-2.2 0-4-1.8-4-4a4 4 0 0 1 4-4 4 4 0 0 1 4 4z"/>
+              </svg>
             </div>
-          </a>
+            <div class="brand-title">
+              <span class="brand-name">MessMaster</span>
+              <span class="brand-sub">Campus Dining</span>
+            </div>
+          </div>
+          <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Navigation">&times;</button>
+        </div>
 
-          <a href="{{ url_for('student_dashboard') }}" class="nav-item" id="nav-my-attendance">
-            <div class="nav-item-content">
-              <span class="icon">📅</span>
-              <span>My Attendance</span>
-            </div>
-          </a>
-        {% else %}
+        <nav class="sidebar-nav">
           <div class="nav-section-title">Core Management</div>
           
           <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}" id="nav-dashboard">
@@ -169,114 +253,109 @@
               <span>Settings</span>
             </div>
           </a>
-        {% endif %}
-      </nav>
+        </nav>
 
-      <div class="sidebar-footer">
-        <div class="user-badge">
-          <div class="user-avatar">{{ (session.get('full_name', 'User')[:2])|upper }}</div>
-          <div class="user-info">
-            <span class="user-name">{{ session.get('full_name') or (current_user.full_name if current_user else 'Admin') }}</span>
-            <span class="user-role">{% if session.get('role') == 'student' %}Student Resident{% else %}Mess Administrator{% endif %}</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- Mobile Sidebar Backdrop -->
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
-    <!-- Main Content Wrapper -->
-    <div class="main-wrapper">
-      
-      <!-- Topbar Header (Exact Aesthetic Replica) -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">☰</button>
-          
-          <!-- Exact Rounded Search Pill from Image -->
-          <div class="topbar-search-pill" id="topbarSearchContainer">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.65; flex-shrink: 0;">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" id="globalSearchInput" placeholder="Search..." autocomplete="off">
-            <span class="kbd-shortcut">⌘ + Space</span>
-          </div>
-
-          <div class="page-breadcrumb hide-on-mobile">
-            <h1 class="page-title">{% block page_title %}College Mess Management{% endblock %}</h1>
-          </div>
-        </div>
-
-        <div class="topbar-right">
-          <!-- Circular Refresh Button from Image -->
-          <button class="topbar-circle-btn" id="refreshBtn" title="Refresh Page" onclick="window.location.reload();">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l6.23-1.19"/>
-            </svg>
-          </button>
-
-          <!-- Circular Bell Notification with Glowing Dot from Image -->
-          <div class="topbar-circle-btn" id="notificationBtn" title="Pending Approvals & Renewals" onclick="window.location.href='{{ url_for('absent_approvals') }}';">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-            </svg>
-            {% if badge_expired_count > 0 or badge_pending_count > 0 %}
-            <span class="notification-dot"></span>
-            {% endif %}
-          </div>
-
-          <!-- Circular Dark / Light Mode Switcher from Image -->
-          <button class="topbar-circle-btn" id="themeToggleBtn" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
-            <span id="themeToggleIcon">🌙</span>
-          </button>
-
-          <!-- User Profile Chip from Image -->
-          <div class="user-profile-chip" title="{{ session.get('full_name') or 'User Profile' }}" onclick="window.location.href='{% if session.get('role') == 'student' %}{{ url_for('student_dashboard') }}{% else %}{{ url_for('settings') }}{% endif %}';">
-            <div class="user-chip-avatar">
-              {{ (session.get('full_name', 'US')[:2])|upper }}
+        <div class="sidebar-footer">
+          <div class="user-badge">
+            <div class="user-avatar">{{ (session.get('full_name', 'Admin')[:2])|upper }}</div>
+            <div class="user-info">
+              <span class="user-name">{{ session.get('full_name') or (current_user.full_name if current_user else 'Admin') }}</span>
+              <span class="user-role">Mess Administrator</span>
             </div>
-            <div class="user-chip-meta hide-on-mobile">
-              <span class="user-chip-name">{{ session.get('full_name') or 'User Profile' }}</span>
-              <span class="user-chip-handle">@{{ (session.get('username') or 'user')|lower }}</span>
-            </div>
-            <svg class="user-chip-chevron hide-on-mobile" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
           </div>
-
-          <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm hide-on-mobile" title="Sign Out">
-            <span>🚪</span>
-            <span class="btn-text-logout">Logout</span>
-          </a>
         </div>
-      </header>
+      </aside>
 
-      <!-- Content Body -->
-      <main class="content-body">
+      <!-- Mobile Sidebar Backdrop -->
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+      <!-- Main Content Wrapper -->
+      <div class="main-wrapper">
         
-        <!-- Flash Alert Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            <div class="flash-container">
-              {% for category, message in messages %}
-                <div class="alert alert-{{ category }}">
-                  <span>{{ message }}</span>
-                  <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
-                </div>
-              {% endfor %}
+        <!-- Topbar Header -->
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">☰</button>
+            
+            <div class="topbar-search-pill" id="topbarSearchContainer">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.65; flex-shrink: 0;">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="globalSearchInput" placeholder="Search..." autocomplete="off">
+              <span class="kbd-shortcut">⌘ + Space</span>
             </div>
-          {% endif %}
-        {% endwith %}
 
-        <!-- Main Body Content -->
-        {% block content %}{% endblock %}
-      </main>
+            <div class="page-breadcrumb hide-on-mobile">
+              <h1 class="page-title">{% block page_title %}College Mess Management{% endblock %}</h1>
+            </div>
+          </div>
 
+          <div class="topbar-right">
+            <button class="topbar-circle-btn" id="refreshBtn" title="Refresh Page" onclick="window.location.reload();">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l6.23-1.19"/>
+              </svg>
+            </button>
+
+            <div class="topbar-circle-btn" id="notificationBtn" title="Pending Approvals & Renewals" onclick="window.location.href='{{ url_for('absent_approvals') }}';">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              {% if badge_expired_count > 0 or badge_pending_count > 0 %}
+              <span class="notification-dot"></span>
+              {% endif %}
+            </div>
+
+            <button class="topbar-circle-btn" id="themeToggleBtn" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
+              <span id="themeToggleIcon">🌙</span>
+            </button>
+
+            <div class="user-profile-chip" title="{{ session.get('full_name') or 'User Profile' }}" onclick="window.location.href='{{ url_for('settings') }}';">
+              <div class="user-chip-avatar">
+                {{ (session.get('full_name', 'US')[:2])|upper }}
+              </div>
+              <div class="user-chip-meta hide-on-mobile">
+                <span class="user-chip-name">{{ session.get('full_name') or 'User Profile' }}</span>
+                <span class="user-chip-handle">@{{ (session.get('username') or 'user')|lower }}</span>
+              </div>
+              <svg class="user-chip-chevron hide-on-mobile" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+
+            <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm hide-on-mobile" title="Sign Out">
+              <span>🚪</span>
+              <span class="btn-text-logout">Logout</span>
+            </a>
+          </div>
+        </header>
+
+        <!-- Content Body -->
+        <main class="content-body">
+          
+          <!-- Flash Alert Messages -->
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              <div class="flash-container">
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }}">
+                    <span>{{ message }}</span>
+                    <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
+
+          <!-- Main Body Content -->
+          {% block content %}{% endblock %}
+        </main>
+
+      </div>
     </div>
-  </div>
+  {% endif %}
 
   <!-- Shared Modal: Quick Record Payment -->
   <div class="modal-overlay" id="paymentModal">
