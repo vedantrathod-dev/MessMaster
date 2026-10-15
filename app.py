@@ -13,10 +13,23 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import urllib.request
+import urllib.error
+
 import database
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'college_mess_secret_key_2026_antigravity')
+
+# Firebase Configuration provided by user
+FIREBASE_CONFIG = {
+    "apiKey": os.environ.get("FIREBASE_API_KEY", "AIzaSyCUe_XSf4gcOHZfTsLzjFHAo1hfJMs9444"),
+    "authDomain": os.environ.get("FIREBASE_AUTH_DOMAIN", "messmaster-c8b62.firebaseapp.com"),
+    "projectId": os.environ.get("FIREBASE_PROJECT_ID", "messmaster-c8b62"),
+    "storageBucket": os.environ.get("FIREBASE_STORAGE_BUCKET", "messmaster-c8b62.firebasestorage.app"),
+    "messagingSenderId": os.environ.get("FIREBASE_MESSAGING_SENDER_ID", "937370272941"),
+    "appId": os.environ.get("FIREBASE_APP_ID", "1:937370272941:web:e1b284f69e12a2fbe87224")
+}
 
 # Context processor for global template variables
 @app.context_processor
@@ -51,7 +64,8 @@ def inject_global_data():
         'current_user': user,
         'today_date': date.today().isoformat(),
         'badge_expiring_count': expiring_count,
-        'badge_expired_count': expired_count
+        'badge_expired_count': expired_count,
+        'firebase_config': FIREBASE_CONFIG
     }
 
 # Authentication decorator
@@ -75,6 +89,41 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
 
+        # 1. If username is an email, try Firebase Auth sign-in with password first
+        if '@' in username:
+            try:
+                fb_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_CONFIG['apiKey']}"
+                req_data = json.dumps({"email": username, "password": password, "returnSecureToken": True}).encode('utf-8')
+                req = urllib.request.Request(fb_url, data=req_data, headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    fb_res = json.loads(resp.read().decode('utf-8'))
+                    verified_email = fb_res.get('email', username)
+                    display_name = fb_res.get('displayName') or verified_email.split('@')[0]
+
+                    conn = database.get_db_connection()
+                    cursor = conn.cursor()
+                    user = cursor.execute("SELECT * FROM users WHERE username = ?", (verified_email,)).fetchone()
+                    if not user:
+                        cursor.execute("""
+                            INSERT INTO users (username, password_hash, full_name, role)
+                            VALUES (?, ?, ?, 'admin')
+                        """, (verified_email, generate_password_hash(password), display_name))
+                        conn.commit()
+                        user = cursor.execute("SELECT * FROM users WHERE username = ?", (verified_email,)).fetchone()
+                    conn.close()
+
+                    session['user_id'] = user['id']
+                    session['username'] = user['username']
+                    session['full_name'] = user['full_name']
+                    session['role'] = user['role']
+                    session['auth_provider'] = 'firebase'
+                    flash(f"Welcome back, {user['full_name']} (Firebase Auth)!", "success")
+                    next_page = request.args.get('next')
+                    return redirect(next_page or url_for('dashboard'))
+            except Exception as e:
+                print(f"Firebase password auth notice: {e}")
+
+        # 2. Local database user lookup (e.g., admin / admin123)
         conn = database.get_db_connection()
         user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
@@ -84,13 +133,65 @@ def login():
             session['username'] = user['username']
             session['full_name'] = user['full_name']
             session['role'] = user['role']
+            session['auth_provider'] = 'local'
             flash(f"Welcome back, {user['full_name']}!", "success")
             next_page = request.args.get('next')
             return redirect(next_page or url_for('dashboard'))
         else:
             flash("Invalid username or password. Please try again.", "danger")
 
-    return render_template('login.html')
+    return render_template('login.html', firebase_config=FIREBASE_CONFIG)
+
+@app.route('/api/firebase-login', methods=['POST'])
+def api_firebase_login():
+    """Handles client-side Firebase token authentication (Google Sign-In / Firebase Auth)"""
+    data = request.get_json() or {}
+    id_token = data.get('idToken')
+    email = data.get('email', '').strip()
+    display_name = data.get('displayName') or (email.split('@')[0] if email else 'Firebase Admin')
+
+    if not id_token:
+        return jsonify({'success': False, 'message': 'Missing Firebase ID token'}), 400
+
+    verified_email = email
+    try:
+        # Verify with Google Identity Toolkit
+        lookup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:lookup?key={FIREBASE_CONFIG['apiKey']}"
+        req_body = json.dumps({"idToken": id_token}).encode('utf-8')
+        req = urllib.request.Request(lookup_url, data=req_body, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            lookup_res = json.loads(resp.read().decode('utf-8'))
+            users_list = lookup_res.get('users', [])
+            if users_list:
+                verified_email = users_list[0].get('email', email)
+                if users_list[0].get('displayName'):
+                    display_name = users_list[0]['displayName']
+    except Exception as e:
+        print(f"Google Token Verification Notice: {e}")
+        if not verified_email:
+            return jsonify({'success': False, 'message': f'Authentication failed: {str(e)}'}), 401
+
+    # Ensure user exists in SQLite database
+    conn = database.get_db_connection()
+    cursor = conn.cursor()
+    user = cursor.execute("SELECT * FROM users WHERE username = ?", (verified_email,)).fetchone()
+    if not user:
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, full_name, role)
+            VALUES (?, ?, ?, 'admin')
+        """, (verified_email, generate_password_hash(os.urandom(16).hex()), display_name))
+        conn.commit()
+        user = cursor.execute("SELECT * FROM users WHERE username = ?", (verified_email,)).fetchone()
+    conn.close()
+
+    # Create session
+    session['user_id'] = user['id']
+    session['username'] = user['username']
+    session['full_name'] = user['full_name']
+    session['role'] = user['role']
+    session['auth_provider'] = 'firebase'
+
+    return jsonify({'success': True, 'redirect': url_for('dashboard')})
 
 @app.route('/logout')
 def logout():

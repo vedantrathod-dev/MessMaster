@@ -6,17 +6,42 @@ import json
 from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'instance', 'mess.db')
+import shutil
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_DB_PATH = os.path.join(BASE_DIR, 'instance', 'mess.db')
+
+def get_db_path():
+    # If running on Vercel or read-only filesystem
+    if os.environ.get('VERCEL') or not os.access(BASE_DIR, os.W_OK):
+        tmp_db = '/tmp/mess.db'
+        if not os.path.exists(tmp_db):
+            os.makedirs('/tmp', exist_ok=True)
+            if os.path.exists(DEFAULT_DB_PATH):
+                try:
+                    shutil.copy2(DEFAULT_DB_PATH, tmp_db)
+                except Exception as e:
+                    print(f"Notice: copying DB to /tmp failed, will init fresh: {e}")
+        return tmp_db
+    return DEFAULT_DB_PATH
 
 def get_db_connection():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    db_file = get_db_path()
+    try:
+        os.makedirs(os.path.dirname(db_file), exist_ok=True)
+    except OSError:
+        pass
+    conn = sqlite3.connect(db_file)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
 def init_db(seed_sample=False):
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    db_file = get_db_path()
+    try:
+        os.makedirs(os.path.dirname(db_file), exist_ok=True)
+    except OSError:
+        pass
     conn = get_db_connection()
     cursor = conn.cursor()
 
