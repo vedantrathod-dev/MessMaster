@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings & Rules{% endblock %}
+{% block page_title %}System Configuration & Dining Rules{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+  
+  <!-- Left Side: Dining & Business Rules -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">🍽️ Mess Configuration & Absent Adjustment Rules</h3>
+    </div>
+    <div class="panel-body">
+      <form action="{{ url_for('settings') }}" method="POST">
+        <input type="hidden" name="action" value="save_mess_settings">
+
+        <h4 style="font-size: 14px; color: var(--primary); margin-bottom: 14px;">Facility Branding & Contact</h4>
+        
+        <div class="form-group">
+          <label class="form-label" for="set_mess_name">Mess Facility Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="mess_name" id="set_mess_name" value="{{ settings.mess_name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="set_college_name">College / Campus Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="college_name" id="set_college_name" value="{{ settings.college_name }}" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="set_contact_phone">Contact Phone</label>
+            <input type="text" class="form-control" name="contact_phone" id="set_contact_phone" value="{{ settings.contact_phone }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="set_contact_email">Official Email</label>
+            <input type="email" class="form-control" name="contact_email" id="set_contact_email" value="{{ settings.contact_email }}">
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 20px 0;">
+
+        <h4 style="font-size: 14px; color: var(--primary); margin-bottom: 14px;">⏱️ Absent-Day Adjustment Policy</h4>
+
+        <div class="form-group">
+          <label class="form-label" for="set_absent_threshold">Minimum Consecutive Absent Days Required <span class="required">*</span></label>
+          <select name="absent_threshold_days" id="set_absent_threshold" class="form-control form-select" required>
+            <option value="3" {% if settings.absent_threshold_days == '3' %}selected{% endif %}>3 Consecutive Days (Standard)</option>
+            <option value="4" {% if settings.absent_threshold_days == '4' %}selected{% endif %}>4 Consecutive Days</option>
+            <option value="5" {% if settings.absent_threshold_days == '5' %}selected{% endif %}>5 Consecutive Days</option>
+          </select>
+          <div class="form-helper">
+            Students who miss this number of consecutive meals within their active plan are automatically flagged for extension approval.
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 20px 0;">
+
+        <h4 style="font-size: 14px; color: var(--primary); margin-bottom: 14px;">💰 Monthly Fee Presets (30 Days)</h4>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="set_veg_fee">Veg Monthly Fee ({{ settings.currency_symbol }})</label>
+            <input type="number" step="0.01" class="form-control" name="veg_monthly_fee" id="set_veg_fee" value="{{ settings.veg_monthly_fee }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="set_nonveg_fee">Non-Veg Monthly Fee ({{ settings.currency_symbol }})</label>
+            <input type="number" step="0.01" class="form-control" name="nonveg_monthly_fee" id="set_nonveg_fee" value="{{ settings.nonveg_monthly_fee }}" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="set_currency">Currency Symbol</label>
+          <input type="text" class="form-control" name="currency_symbol" id="set_currency" value="{{ settings.currency_symbol }}" style="width: 100px;">
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button type="submit" class="btn btn-primary">
+            💾 Save Mess Configuration
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right Side: Security & Sample Data Control -->
+  <div>
+    <!-- Admin Password Change -->
+    <div class="panel" style="margin-bottom: 24px;">
+      <div class="panel-header">
+        <h3 class="panel-title">🔐 Administrator Password</h3>
+      </div>
+      <div class="panel-body">
+        <form action="{{ url_for('settings') }}" method="POST">
+          <input type="hidden" name="action" value="change_password">
+
+          <div class="form-group">
+            <label class="form-label" for="current_password">Current Password <span class="required">*</span></label>
+            <input type="password" class="form-control" name="current_password" id="current_password" placeholder="Enter current admin password" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="new_password">New Password <span class="required">*</span></label>
+            <input type="password" class="form-control" name="new_password" id="new_password" placeholder="At least 6 characters" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirm_password">Confirm New Password <span class="required">*</span></label>
+            <input type="password" class="form-control" name="confirm_password" id="confirm_password" placeholder="Re-enter new password" required>
+          </div>
+
+          <button type="submit" class="btn btn-secondary">
+            Update Password
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sample Data Reset -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3 class="panel-title">🧪 Testing & Sample Records</h3>
+      </div>
+      <div class="panel-body">
+        <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 16px;">
+          Need to test the system from a fresh state or showcase the dashboard? You can reload the sample database containing 12 demo students across Veg/Non-Veg plans, partial payments, expiring warnings, and consecutive absences.
+        </p>
+
+        <form action="{{ url_for('settings') }}" method="POST" onsubmit="return confirm('Reset and reload sample dataset? This will recreate test students and attendance.')">
+          <input type="hidden" name="action" value="reset_sample_data">
+          <button type="submit" class="btn btn-outline" style="color: var(--danger); border-color: #fca5a5;">
+            🔄 Reload Fresh Sample Dataset
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}New Student Admission{% endblock %}
+{% block page_title %}Student Admission Form{% endblock %}
+
+{% block content %}
+<input type="hidden" id="vegDefaultFee" value="{{ default_veg_fee }}">
+<input type="hidden" id="nonvegDefaultFee" value="{{ default_nonveg_fee }}">
+
+<div style="max-width: 900px; margin: 0 auto;">
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">📝 Student Admission & Initial Mess Registration</h3>
+      <span class="badge badge-active">ID: {{ next_student_id }}</span>
+    </div>
+
+    <div class="panel-body">
+      <form action="{{ url_for('admission') }}" method="POST" id="admissionForm">
+        
+        <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          <span>👤</span> Personal & Academic Information
+        </h4>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="student_id_preview">Generated Student ID</label>
+            <input type="text" class="form-control" id="student_id_preview" value="{{ next_student_id }}" readonly style="background-color: #f1f5f9; font-weight: 700; color: var(--primary);">
+            <div class="form-helper">Unique system-generated identifier</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="full_name">Full Name <span class="required">*</span></label>
+            <input type="text" class="form-control" name="full_name" id="full_name" placeholder="e.g. Rahul Sharma" required autofocus>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="mobile">Mobile Number <span class="required">*</span></label>
+            <input type="tel" class="form-control" name="mobile" id="mobile" placeholder="e.g. 9876543210" pattern="[0-9]{10}" required>
+            <div class="form-helper">10-digit mobile number (used for unique identification)</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="college_name">College / Department Name <span class="required">*</span></label>
+            <input type="text" class="form-control" name="college_name" id="college_name" value="{{ college_name }}" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="admission_date">Admission Date <span class="required">*</span></label>
+            <input type="date" class="form-control" name="admission_date" id="admission_date" value="{{ today_date }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="messStartDate">Mess Start Date <span class="required">*</span></label>
+            <input type="date" class="form-control" name="mess_start_date" id="messStartDate" value="{{ today_date }}" required>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--card-border); margin: 24px 0;">
+
+        <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          <span>🍽️</span> Mess Plan & Duration
+        </h4>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="messType">Mess Dining Type <span class="required">*</span></label>
+            <select class="form-control form-select" name="mess_type" id="messType" required>
+              <option value="Veg" selected>Pure Veg Mess ({{ currency_symbol }}{{ default_veg_fee }}/month)</option>
+              <option value="Non-Veg">Non-Veg Mess ({{ currency_symbol }}{{ default_nonveg_fee }}/month)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="planDuration">Mess Plan Duration (Days) <span class="required">*</span></label>
+            <select class="form-control form-select" name="plan_duration" id="planDuration" required>
+              <option value="30" selected>30 Days (Standard 1 Month)</option>
+              <option value="60">60 Days (2 Months)</option>
+              <option value="90">90 Days (Quarterly / 3 Months)</option>
+              <option value="180">180 Days (Semester / 6 Months)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dynamic Calculation Callout Box -->
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; font-size: 14px;">
+            <div>
+              <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; display: block;">CALCULATED EXPIRY DATE</span>
+              <strong id="expiryPreview" style="font-size: 18px; color: var(--primary-dark);">--</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; display: block;">TOTAL MESS CHARGES</span>
+              <strong style="font-size: 18px; color: var(--text-main);">{{ currency_symbol }}<span id="totalFeePreview">3200.00</span></strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 12px; font-weight: 600; display: block;">OUTSTANDING BALANCE</span>
+              <strong style="font-size: 18px; color: #b45309;">{{ currency_symbol }}<span id="balancePreview">0.00</span></strong>
+            </div>
+          </div>
+        </div>
+
+        <h4 style="font-size: 15px; margin-bottom: 16px; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+          <span>💳</span> Fee Payment Details
+        </h4>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="totalFee">Total Plan Fee ({{ currency_symbol }}) <span class="required">*</span></label>
+            <input type="number" step="0.01" min="0" class="form-control" name="total_fee" id="totalFee" value="{{ default_veg_fee }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="amountPaid">Amount Paid Now ({{ currency_symbol }}) <span class="required">*</span></label>
+            <input type="number" step="0.01" min="0" class="form-control" name="amount_paid" id="amountPaid" value="{{ default_veg_fee }}" required>
+            <div class="form-helper">Enter 0 for pending, or partial amount</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="paymentMethod">Payment Method</label>
+            <select class="form-control form-select" name="payment_method" id="paymentMethod">
+              <option value="UPI" selected>UPI / QR Code</option>
+              <option value="Cash">Cash</option>
+              <option value="Credit/Debit Card">Credit / Debit Card</option>
+              <option value="Net Banking">Net Banking</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="notes">Receipt Remarks / Notes</label>
+            <input type="text" class="form-control" name="notes" id="notes" placeholder="e.g. Admission initial deposit">
+          </div>
+        </div>
+
+        <div style="margin-top: 32px; display: flex; justify-content: flex-end; gap: 14px;">
+          <a href="{{ url_for('students') }}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary btn-lg" id="btn-submit-admission">
+            <span>💾</span> Complete Student Admission
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Sync the display span with the input
+  document.getElementById('totalFee').addEventListener('input', function() {
+    document.getElementById('totalFeePreview').textContent = parseFloat(this.value || 0).toFixed(2);
+  });
+</script>
+{% endblock %}

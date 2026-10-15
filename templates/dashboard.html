@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block page_title %}Dashboard & Analytics{% endblock %}
+
+{% block content %}
+<!-- Quick Actions Bar -->
+<div class="toolbar" style="margin-bottom: 24px;">
+  <div style="font-size: 14px; font-weight: 600; color: var(--text-muted);">
+    Welcome to the Mess Control Center &bull; Live Operations Overview
+  </div>
+  <div class="filter-group">
+    <a href="{{ url_for('attendance') }}" class="btn btn-outline btn-sm">
+      <span>📅</span> Mark Today's Attendance
+    </a>
+    <a href="{{ url_for('payments') }}" class="btn btn-outline btn-sm">
+      <span>💳</span> Record Payment
+    </a>
+    <a href="{{ url_for('absent_approvals') }}" class="btn btn-outline btn-sm">
+      <span>⏱️</span> Review Absences ({{ eligible_absences|length }})
+    </a>
+  </div>
+</div>
+
+<!-- 10 Required Summary KPI Cards -->
+<div class="stats-grid">
+  <!-- 1. Total Admitted Students -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Total Admitted</span>
+      <div class="stat-icon primary">👥</div>
+    </div>
+    <div class="stat-value">{{ total_admitted }}</div>
+    <div class="stat-footer">Lifetime registered students</div>
+  </div>
+
+  <!-- 2. Active Students -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Active Dining</span>
+      <div class="stat-icon success">🟢</div>
+    </div>
+    <div class="stat-value">{{ active_students }}</div>
+    <div class="stat-footer">Currently eligible for dining</div>
+  </div>
+
+  <!-- 3. Veg Mess Students -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Veg Mess Students</span>
+      <div class="stat-icon success">🥗</div>
+    </div>
+    <div class="stat-value" style="color: var(--veg-color);">{{ veg_students }}</div>
+    <div class="stat-footer">Active pure vegetarian plan</div>
+  </div>
+
+  <!-- 4. Non-Veg Mess Students -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Non-Veg Mess Students</span>
+      <div class="stat-icon danger">🍗</div>
+    </div>
+    <div class="stat-value" style="color: var(--nonveg-color);">{{ nonveg_students }}</div>
+    <div class="stat-footer">Active non-vegetarian plan</div>
+  </div>
+
+  <!-- 5. Total Fees Collected -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Fees Collected</span>
+      <div class="stat-icon success">💰</div>
+    </div>
+    <div class="stat-value" style="color: #059669;">{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</div>
+    <div class="stat-footer">Total payments deposited</div>
+  </div>
+
+  <!-- 6. Pending Payments -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Pending Payments</span>
+      <div class="stat-icon warning">⏳</div>
+    </div>
+    <div class="stat-value" style="color: #d97706;">{{ currency_symbol }}{{ "%.2f"|format(pending_payments) }}</div>
+    <div class="stat-footer">Outstanding balance to collect</div>
+  </div>
+
+  <!-- 7. Students Absent Today -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Absent Today</span>
+      <div class="stat-icon danger">❌</div>
+    </div>
+    <div class="stat-value" style="color: var(--danger);">{{ absent_today }}</div>
+    <div class="stat-footer">{{ present_today }} marked present today</div>
+  </div>
+
+  <!-- 8. Students with 3+ Consecutive Absences -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">3+ Consecutive Absences</span>
+      <div class="stat-icon warning">⚠️</div>
+    </div>
+    <div class="stat-value" style="color: #d97706;">{{ eligible_absences|length }}</div>
+    <div class="stat-footer">Eligible for absence adjustment</div>
+  </div>
+
+  <!-- 9. Expiring Within 3 Days -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Expiring in &le; 3 Days</span>
+      <div class="stat-icon warning">🔔</div>
+    </div>
+    <div class="stat-value" style="color: #b45309;">{{ expiring_soon|length }}</div>
+    <div class="stat-footer">Requires immediate renewal</div>
+  </div>
+
+  <!-- 10. Total Expired Students -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Expired Students</span>
+      <div class="stat-icon danger">🚫</div>
+    </div>
+    <div class="stat-value" style="color: #dc2626;">{{ expired_students }}</div>
+    <div class="stat-footer">Past dining expiry date</div>
+  </div>
+</div>
+
+<!-- Charts Section -->
+<div class="dashboard-grid">
+  <!-- Chart 1: 7-Day Attendance Trend -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">📈 7-Day Attendance Trend (Present vs Absent)</h3>
+      <a href="{{ url_for('attendance') }}" class="btn btn-outline btn-sm">Full Attendance</a>
+    </div>
+    <div class="panel-body">
+      <div style="height: 280px; position: relative;">
+        <canvas id="attendanceChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart 2: Plan Breakdown -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">🥗 Mess Plan Distribution</h3>
+      <span class="badge badge-active">{{ active_students }} Active</span>
+    </div>
+    <div class="panel-body">
+      <div style="height: 230px; position: relative; display: flex; align-items: center; justify-content: center;">
+        <canvas id="planChart"></canvas>
+      </div>
+      <div style="display: flex; justify-content: space-around; margin-top: 16px; font-size: 13px;">
+        <div style="text-align: center;">
+          <div style="font-weight: 700; color: var(--veg-color);">Veg: {{ veg_students }}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">{{ "%.1f"|format((veg_students / (active_students or 1)) * 100) }}%</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-weight: 700; color: var(--nonveg-color);">Non-Veg: {{ nonveg_students }}</div>
+          <div style="font-size: 11px; color: var(--text-muted);">{{ "%.1f"|format((nonveg_students / (active_students or 1)) * 100) }}%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Actionable Tables Grid -->
+<div class="dashboard-grid">
+  <!-- Table 1: Expiring Within 3 Days -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">🔔 Students Expiring Within 3 Days ({{ expiring_soon|length }})</h3>
+      <a href="{{ url_for('expired_students') }}" class="btn btn-outline btn-sm">View All Expired</a>
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Name</th>
+              <th>Mess Type</th>
+              <th>Expiry Date</th>
+              <th>Days Left</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if expiring_soon %}
+              {% for s in expiring_soon %}
+                <tr>
+                  <td><strong><a href="{{ url_for('student_profile', student_id=s.student_id) }}">{{ s.student_id }}</a></strong></td>
+                  <td>{{ s.full_name }}</td>
+                  <td>
+                    <span class="badge {% if s.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+                      {{ s.mess_type }}
+                    </span>
+                  </td>
+                  <td>{{ s.current_expiry_date }}</td>
+                  <td>
+                    <span class="badge badge-warning">
+                      {{ s.days_left|int }} day(s) left
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-primary btn-sm" onclick="populateRenewModal('{{ s.student_id }}', '{{ s.full_name }}', '{{ s.mess_type }}')">
+                      Renew
+                    </button>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  ✨ No students are expiring in the next 3 days. All plans active!
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table 2: 3+ Consecutive Absences Detected -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">⏱️ Consecutive Absences Detected ({{ eligible_absences|length }})</h3>
+      <a href="{{ url_for('absent_approvals') }}" class="btn btn-outline btn-sm">Approvals Center</a>
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Consecutive Days</th>
+              <th>Proposed New Expiry</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if eligible_absences %}
+              {% for adj in eligible_absences %}
+                <tr>
+                  <td>
+                    <strong><a href="{{ url_for('student_profile', student_id=adj.student_id) }}">{{ adj.student_name }}</a></strong>
+                    <div style="font-size: 11px; color: var(--text-muted);">{{ adj.student_id }} &bull; {{ adj.mess_type }}</div>
+                  </td>
+                  <td>
+                    <span class="badge badge-warning">{{ adj.consecutive_count }} Consecutive Days</span>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">{{ adj.absent_dates_str }}</div>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600; color: var(--success);">{{ adj.proposed_expiry_date }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">(+{{ adj.credited_days }} days credit)</div>
+                  </td>
+                  <td>
+                    <a href="{{ url_for('absent_approvals') }}" class="btn btn-success btn-sm">
+                      Approve
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  ✨ No active students currently have 3 or more consecutive uncredited absent days.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // 1. Chart: 7-Day Attendance Trend
+  const ctxAttendance = document.getElementById('attendanceChart').getContext('2d');
+  const chartDates = {{ chart_dates|safe }};
+  const chartPresents = {{ chart_presents|safe }};
+  const chartAbsents = {{ chart_absents|safe }};
+
+  new Chart(ctxAttendance, {
+    type: 'bar',
+    data: {
+      labels: chartDates,
+      datasets: [
+        {
+          label: 'Present Students',
+          data: chartPresents,
+          backgroundColor: '#10b981',
+          borderRadius: 6
+        },
+        {
+          label: 'Absent Students',
+          data: chartAbsents,
+          backgroundColor: '#f43f5e',
+          borderRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top' }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, ticks: { precision: 0 } }
+      }
+    }
+  });
+
+  // 2. Chart: Veg vs Non-Veg
+  const ctxPlan = document.getElementById('planChart').getContext('2d');
+  new Chart(ctxPlan, {
+    type: 'doughnut',
+    data: {
+      labels: ['Pure Veg', 'Non-Veg'],
+      datasets: [{
+        data: [{{ veg_students }}, {{ nonveg_students }}],
+        backgroundColor: ['#10b981', '#f43f5e'],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+</script>
+{% endblock %}

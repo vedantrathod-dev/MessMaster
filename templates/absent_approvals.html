@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Absent-Day Approvals & Extensions{% endblock %}
+{% block page_title %}Absent-Day Adjustment & Extension Center{% endblock %}
+
+{% block content %}
+<!-- Policy Rule Callout Banner -->
+<div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--primary); background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);">
+  <div class="panel-body">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📜</span>
+          <h3 style="font-size: 16px; font-weight: 700;">Active Policy Rule: Minimum {{ threshold }} Consecutive Absent Days</h3>
+        </div>
+        <p style="font-size: 13.5px; color: var(--text-muted); margin-top: 4px;">
+          Students absent for <strong>{{ threshold }} or more consecutive days</strong> qualify for plan extension equivalent to their absent duration.
+          Approval extends the mess plan expiry date automatically without charging extra fees.
+        </p>
+      </div>
+      <div>
+        <a href="{{ url_for('settings') }}" class="btn btn-outline btn-sm">
+          ⚙️ Change Rule Threshold (Currently: {{ threshold }} Days)
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 1. Detected Eligible Absences Awaiting Admin Review -->
+<div class="panel" style="margin-bottom: 28px;">
+  <div class="panel-header">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h3 class="panel-title">⏱️ Qualifying Consecutive Absences Detected ({{ eligible_streaks|length }})</h3>
+      <span class="badge badge-warning">Awaiting Approval</span>
+    </div>
+  </div>
+
+  <div class="panel-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student ID & Name</th>
+            <th>Mess Plan</th>
+            <th>Consecutive Absent Days</th>
+            <th>Absent Dates Range</th>
+            <th>Current Expiry</th>
+            <th>Proposed Extended Expiry</th>
+            <th>Extension Credit</th>
+            <th style="text-align: right;">Admin Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if eligible_streaks %}
+            {% for streak in eligible_streaks %}
+              <tr>
+                <td>
+                  <strong><a href="{{ url_for('student_profile', student_id=streak.student_id) }}" style="color: var(--primary);">{{ streak.student_name }}</a></strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">{{ streak.student_id }}</div>
+                </td>
+                <td>
+                  <span class="badge {% if streak.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+                    {{ streak.mess_type }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-warning" style="font-size: 13px;">
+                    🔥 {{ streak.consecutive_count }} Consecutive Days
+                  </span>
+                </td>
+                <td>
+                  <span style="font-size: 12.5px; font-weight: 500;">{{ streak.absent_dates_str }}</span>
+                </td>
+                <td>
+                  <span style="color: var(--text-muted);">{{ streak.original_expiry_date }}</span>
+                </td>
+                <td>
+                  <strong style="color: #059669; font-size: 14px;">{{ streak.proposed_expiry_date }}</strong>
+                </td>
+                <td>
+                  <span class="badge badge-active">+{{ streak.credited_days }} Days Free Extension</span>
+                </td>
+                <td style="text-align: right;">
+                  <form action="{{ url_for('approve_detected') }}" method="POST" style="display: inline-block;">
+                    <input type="hidden" name="student_id" value="{{ streak.student_id }}">
+                    <input type="hidden" name="plan_id" value="{{ streak.plan_id }}">
+                    <input type="hidden" name="consecutive_count" value="{{ streak.consecutive_count }}">
+                    <input type="hidden" name="absent_dates_json" value='{{ streak.absent_dates|tojson }}'>
+                    <input type="hidden" name="original_expiry_date" value="{{ streak.original_expiry_date }}">
+                    <input type="hidden" name="proposed_expiry_date" value="{{ streak.proposed_expiry_date }}">
+                    <input type="hidden" name="admin_notes" value="Approved by Administrator">
+                    <button type="submit" class="btn btn-success btn-sm" onclick="return confirm('Approve {{ streak.credited_days }}-day extension for {{ streak.student_name }}? New expiry will be {{ streak.proposed_expiry_date }}.')">
+                      ✓ Approve Extension
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                ✨ No uncredited consecutive absences &ge; {{ threshold }} days detected at this time. All students up-to-date!
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Absence Adjustment History Log -->
+<div class="panel">
+  <div class="panel-header">
+    <h3 class="panel-title">📋 Absence Adjustment History Log ({{ adjustments_history|length }})</h3>
+  </div>
+
+  <div class="panel-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Adjustment ID</th>
+            <th>Student</th>
+            <th>Absent Dates</th>
+            <th>Days Credited</th>
+            <th>Original Expiry</th>
+            <th>New Expiry</th>
+            <th>Status</th>
+            <th>Decision Date</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if adjustments_history %}
+            {% for adj in adjustments_history %}
+              <tr>
+                <td><strong>#ADJ-{{ adj.id }}</strong></td>
+                <td>
+                  <strong><a href="{{ url_for('student_profile', student_id=adj.student_id) }}" style="color: var(--primary);">{{ adj.student_name }}</a></strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">{{ adj.student_id }} &bull; {{ adj.mess_type }}</div>
+                </td>
+                <td>
+                  <span style="font-size: 12px;">{{ adj.absent_dates_json }}</span>
+                </td>
+                <td>
+                  <strong style="color: #059669;">+{{ adj.credited_days }} Days</strong>
+                </td>
+                <td>{{ adj.original_expiry_date }}</td>
+                <td><strong>{{ adj.updated_expiry_date }}</strong></td>
+                <td>
+                  {% if adj.status == 'Approved' %}
+                    <span class="badge badge-active">Approved</span>
+                  {% elif adj.status == 'Pending' %}
+                    <span class="badge badge-warning">Pending</span>
+                  {% else %}
+                    <span class="badge badge-expired">Rejected</span>
+                  {% endif %}
+                </td>
+                <td>{{ adj.approved_date or adj.requested_date }}</td>
+                <td style="font-size: 12px; color: var(--text-muted);">{{ adj.admin_notes or '--' }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                No adjustment records found.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

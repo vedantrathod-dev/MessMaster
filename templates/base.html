@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Professional College Mess Management System for student admissions, dining plans, attendance, payments, and absence adjustments.">
+  <title>{% block title %}{{ mess_name }}{% endblock %} - College Mess Management</title>
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  
+  <!-- Chart.js for interactive analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="appSidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">🍽️</div>
+        <div class="brand-title">
+          <span class="brand-name">MessMaster</span>
+          <span class="brand-sub">Campus Dining Ops</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Core Management</div>
+        
+        <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+          <div class="nav-item-content">
+            <span class="icon">📊</span>
+            <span>Dashboard</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('students') }}" class="nav-item {% if request.endpoint == 'students' %}active{% endif %}" id="nav-students">
+          <div class="nav-item-content">
+            <span class="icon">👥</span>
+            <span>All Students</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('admission') }}" class="nav-item {% if request.endpoint == 'admission' %}active{% endif %}" id="nav-admission">
+          <div class="nav-item-content">
+            <span class="icon">📝</span>
+            <span>New Admission</span>
+          </div>
+        </a>
+
+        <div class="nav-section-title">Mess Plans</div>
+
+        <a href="{{ url_for('veg_mess') }}" class="nav-item {% if request.endpoint == 'veg_mess' %}active{% endif %}" id="nav-veg">
+          <div class="nav-item-content">
+            <span class="icon">🥗</span>
+            <span>Veg Mess</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('nonveg_mess') }}" class="nav-item {% if request.endpoint == 'nonveg_mess' %}active{% endif %}" id="nav-nonveg">
+          <div class="nav-item-content">
+            <span class="icon">🍗</span>
+            <span>Non-Veg Mess</span>
+          </div>
+        </a>
+
+        <div class="nav-section-title">Operations</div>
+
+        <a href="{{ url_for('attendance') }}" class="nav-item {% if request.endpoint == 'attendance' %}active{% endif %}" id="nav-attendance">
+          <div class="nav-item-content">
+            <span class="icon">📅</span>
+            <span>Attendance</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('payments') }}" class="nav-item {% if request.endpoint == 'payments' %}active{% endif %}" id="nav-payments">
+          <div class="nav-item-content">
+            <span class="icon">💳</span>
+            <span>Payments</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('absent_approvals') }}" class="nav-item {% if request.endpoint == 'absent_approvals' %}active{% endif %}" id="nav-absent-approvals">
+          <div class="nav-item-content">
+            <span class="icon">⏱️</span>
+            <span>Absent Approvals</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('expired_students') }}" class="nav-item {% if request.endpoint == 'expired_students' %}active{% endif %}" id="nav-expired">
+          <div class="nav-item-content">
+            <span class="icon">⚠️</span>
+            <span>Expired Students</span>
+          </div>
+          {% if badge_expired_count > 0 %}
+          <span class="nav-badge danger">{{ badge_expired_count }}</span>
+          {% endif %}
+        </a>
+
+        <div class="nav-section-title">Administration</div>
+
+        <a href="{{ url_for('reports') }}" class="nav-item {% if request.endpoint == 'reports' %}active{% endif %}" id="nav-reports">
+          <div class="nav-item-content">
+            <span class="icon">📑</span>
+            <span>Reports & Export</span>
+          </div>
+        </a>
+
+        <a href="{{ url_for('settings') }}" class="nav-item {% if request.endpoint == 'settings' %}active{% endif %}" id="nav-settings">
+          <div class="nav-item-content">
+            <span class="icon">⚙️</span>
+            <span>Settings</span>
+          </div>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-badge">
+          <div class="user-avatar">AD</div>
+          <div class="user-info">
+            <span class="user-name">{{ current_user.full_name if current_user else 'Admin' }}</span>
+            <span class="user-role">Mess Administrator</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper">
+      
+      <!-- Topbar Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">☰</button>
+          <div class="page-breadcrumb">
+            <h1 class="page-title">{% block page_title %}College Mess Management{% endblock %}</h1>
+            <span style="font-size: 11.5px; color: var(--text-muted);">{{ mess_name }} &bull; {{ college_name }}</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <div class="date-indicator">
+            <span>🗓️</span>
+            <span>{{ today_date }}</span>
+          </div>
+          <a href="{{ url_for('admission') }}" class="btn btn-primary btn-sm" id="btn-quick-admission">
+            <span>➕</span>
+            <span>New Admission</span>
+          </a>
+          <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm" title="Sign Out">
+            <span>🚪</span>
+            <span>Logout</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Content Body -->
+      <main class="content-body">
+        
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-container">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                  <span>{{ message }}</span>
+                  <button class="alert-close" onclick="this.parentElement.remove()">✕</button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <!-- Main Body Content -->
+        {% block content %}{% endblock %}
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Shared Modal: Quick Record Payment -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Record Payment</h3>
+        <button class="modal-close" onclick="closeModal('paymentModal')">&times;</button>
+      </div>
+      <form action="{{ url_for('record_payment') }}" method="POST">
+        <div class="modal-body">
+          <input type="hidden" name="student_id" id="modalStudentId">
+          <div class="form-group">
+            <label class="form-label">Student</label>
+            <div id="modalStudentName" style="font-weight: 700; color: var(--primary);"></div>
+            <div class="form-helper">Outstanding Balance: {{ currency_symbol }}<span id="modalBalance">0.00</span></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modalAmount">Payment Amount ({{ currency_symbol }}) <span class="required">*</span></label>
+            <input type="number" step="0.01" min="1" class="form-control" name="amount" id="modalAmount" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="modalPaymentMethod">Payment Method <span class="required">*</span></label>
+              <select class="form-control form-select" name="payment_method" id="modalPaymentMethod" required>
+                <option value="UPI">UPI / QR Code</option>
+                <option value="Cash">Cash</option>
+                <option value="Credit/Debit Card">Credit/Debit Card</option>
+                <option value="Net Banking">Net Banking</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="modalPaymentDate">Payment Date <span class="required">*</span></label>
+              <input type="date" class="form-control" name="payment_date" id="modalPaymentDate" value="{{ today_date }}" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="modalNotes">Notes / Receipt Remarks</label>
+            <input type="text" class="form-control" name="notes" id="modalNotes" placeholder="e.g. October installment">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('paymentModal')">Cancel</button>
+          <button type="submit" class="btn btn-success">Confirm & Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shared Modal: Quick Renew Mess Plan -->
+  <div class="modal-overlay" id="renewModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Renew Mess Plan</h3>
+        <button class="modal-close" onclick="closeModal('renewModal')">&times;</button>
+      </div>
+      <form id="renewForm" method="POST" action="">
+        <div class="modal-body">
+          <input type="hidden" name="student_id" id="renewStudentId">
+          <div class="form-group">
+            <label class="form-label">Student</label>
+            <div id="renewStudentName" style="font-weight: 700; color: var(--primary);"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Mess Type</label>
+              <select class="form-control form-select" name="mess_type" id="renewMessType" required>
+                <option value="Veg">Pure Veg Mess</option>
+                <option value="Non-Veg">Non-Veg Mess</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Renewal Duration</label>
+              <select class="form-control form-select" name="duration_days" id="renewDuration" required>
+                <option value="30" selected>30 Days (1 Month)</option>
+                <option value="60">60 Days (2 Months)</option>
+                <option value="90">90 Days (Quarterly)</option>
+                <option value="180">180 Days (Semester)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Renewal Start Date</label>
+              <input type="date" class="form-control" name="start_date" id="renewStartDate" value="{{ today_date }}" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Fee ({{ currency_symbol }})</label>
+              <input type="number" step="0.01" class="form-control" name="fee" id="renewFee" value="3200" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Amount Paid Now ({{ currency_symbol }})</label>
+              <input type="number" step="0.01" min="0" class="form-control" name="amount_paid" id="renewAmountPaid" value="3200">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Method</label>
+              <select class="form-control form-select" name="payment_method">
+                <option value="UPI">UPI</option>
+                <option value="Cash">Cash</option>
+                <option value="Credit/Debit Card">Card</option>
+                <option value="Net Banking">Net Banking</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('renewModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Renew Mess Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JavaScript Bundle -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script>
+    // Dynamically adjust renew form action URL when opening modal
+    const originalPopulate = window.populateRenewModal;
+    window.populateRenewModal = function(studentId, studentName, messType) {
+      const form = document.getElementById('renewForm');
+      if (form) {
+        form.action = `/student/${studentId}/renew`;
+      }
+      originalPopulate(studentId, studentName, messType);
+    };
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrator Login - College Mess Management</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      padding: 20px;
+    }
+    .login-card {
+      background: #ffffff;
+      border-radius: var(--radius-xl);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 440px;
+      padding: 40px;
+      position: relative;
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .login-logo {
+      width: 60px;
+      height: 60px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      margin: 0 auto 16px;
+      box-shadow: 0 8px 16px rgba(79, 70, 229, 0.3);
+    }
+    .login-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .login-sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .demo-credentials {
+      margin-top: 24px;
+      padding: 14px 16px;
+      background-color: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      color: #475569;
+    }
+    .demo-credentials code {
+      background-color: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">🍽️</div>
+        <h1 class="login-title">MessMaster Portal</h1>
+        <p class="login-sub">College Mess Management System &bull; Sign In</p>
+      </div>
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="margin-bottom: 20px;">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form action="{{ url_for('login') }}" method="POST">
+        <div class="form-group">
+          <label class="form-label" for="username">Admin Username</label>
+          <input type="text" class="form-control" id="username" name="username" value="admin" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" class="form-control" id="password" name="password" value="admin123" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 8px;">
+          <span>🔐</span> Sign In to Dashboard
+        </button>
+      </form>
+
+      <div class="demo-credentials">
+        <strong>Default Admin Credentials:</strong><br>
+        Username: <code>admin</code> &nbsp;|&nbsp; Password: <code>admin123</code>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

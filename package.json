@@ -1,0 +1,20 @@
+{
+  "name": "college-mess-management-system",
+  "version": "1.0.0",
+  "description": "Complete College Mess Management System - Admitting students, tracking Veg/Non-Veg plans, attendance, absent adjustments, payments, and renewals",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "dev": "python app.py",
+    "init-db": "python database.py --init-sample"
+  },
+  "keywords": [
+    "mess-management",
+    "college",
+    "hostel",
+    "flask",
+    "sqlite"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}

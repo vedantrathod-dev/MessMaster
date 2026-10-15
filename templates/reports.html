@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & CSV Exports{% endblock %}
+{% block page_title %}Reports & Analytics Center{% endblock %}
+
+{% block content %}
+<!-- Report Configuration Panel -->
+<div class="panel btn-print-hide" style="margin-bottom: 24px;">
+  <div class="panel-header">
+    <h3 class="panel-title">📑 Select Report Type & Filters</h3>
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('export_csv', report_type=report_type, date=selected_date, month=selected_month, mess_type=mess_filter) }}" class="btn btn-success btn-sm">
+        📥 Export to CSV
+      </a>
+      <button onclick="window.print()" class="btn btn-outline btn-sm">
+        🖨️ Print Report
+      </button>
+    </div>
+  </div>
+
+  <div class="panel-body">
+    <form method="GET" action="{{ url_for('reports') }}">
+      <div class="form-row">
+        <!-- Report Type -->
+        <div class="form-group">
+          <label class="form-label" for="reportTypeSelect">Report Type</label>
+          <select name="report_type" id="reportTypeSelect" class="form-control form-select" onchange="this.form.submit()">
+            <option value="daily_attendance" {% if report_type == 'daily_attendance' %}selected{% endif %}>📅 Daily Attendance Report</option>
+            <option value="monthly_attendance" {% if report_type == 'monthly_attendance' %}selected{% endif %}>🗓️ Monthly Attendance Summary</option>
+            <option value="payments_collection" {% if report_type == 'payments_collection' %}selected{% endif %}>💰 Payment Collection Report</option>
+            <option value="pending_fees" {% if report_type == 'pending_fees' %}selected{% endif %}>⏳ Pending Fees & Dues Report</option>
+            <option value="expired_students" {% if report_type == 'expired_students' %}selected{% endif %}>🚫 Expired Mess Students Report</option>
+            <option value="absent_adjustments" {% if report_type == 'absent_adjustments' %}selected{% endif %}>⏱️ Approved Absent-Day Adjustments</option>
+          </select>
+        </div>
+
+        <!-- Conditional Filters based on Report Type -->
+        {% if report_type == 'daily_attendance' %}
+          <div class="form-group">
+            <label class="form-label" for="reportDate">Select Date</label>
+            <input type="date" class="form-control" name="date" id="reportDate" value="{{ selected_date }}" onchange="this.form.submit()">
+          </div>
+        {% elif report_type in ('monthly_attendance', 'payments_collection') %}
+          <div class="form-group">
+            <label class="form-label" for="reportMonth">Select Month</label>
+            <input type="month" class="form-control" name="month" id="reportMonth" value="{{ selected_month }}" onchange="this.form.submit()">
+          </div>
+        {% endif %}
+
+        {% if report_type in ('daily_attendance', 'monthly_attendance') %}
+          <div class="form-group">
+            <label class="form-label" for="reportMessType">Mess Filter</label>
+            <select name="mess_type" id="reportMessType" class="form-control form-select" onchange="this.form.submit()">
+              <option value="all" {% if mess_filter == 'all' %}selected{% endif %}>All Mess Types</option>
+              <option value="Veg" {% if mess_filter == 'Veg' %}selected{% endif %}>Pure Veg</option>
+              <option value="Non-Veg" {% if mess_filter == 'Non-Veg' %}selected{% endif %}>Non-Veg</option>
+            </select>
+          </div>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Report Output Container -->
+<div class="panel">
+  <!-- Print Header -->
+  <div class="panel-header" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+    <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+      <h2 style="font-size: 18px;">
+        {% if report_type == 'daily_attendance' %}
+          Daily Attendance Report &bull; {{ selected_date }}
+        {% elif report_type == 'monthly_attendance' %}
+          Monthly Attendance Summary &bull; {{ selected_month }}
+        {% elif report_type == 'payments_collection' %}
+          Fee Collection Report &bull; {{ selected_month }}
+        {% elif report_type == 'pending_fees' %}
+          Pending Fees & Outstanding Balances Report
+        {% elif report_type == 'expired_students' %}
+          Expired Mess Memberships Audit Report
+        {% elif report_type == 'absent_adjustments' %}
+          Approved Absent-Day Extensions Report
+        {% endif %}
+      </h2>
+      <span class="badge" style="background:#f1f5f9; color:#475569;">{{ report_data|length }} Records</span>
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted);">
+      {{ mess_name }} &bull; Generated on {{ today_date }}
+    </div>
+  </div>
+
+  <!-- Summary Pills Bar -->
+  {% if summary %}
+    <div class="panel-body" style="background: #f8fafc; border-bottom: 1px solid var(--card-border); padding: 14px 24px;">
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; font-size: 13.5px;">
+        {% for k, v in summary.items() %}
+          <div>
+            <span style="color: var(--text-muted); text-transform: uppercase; font-size: 11px; font-weight: 600;">{{ k.replace('_', ' ') }}:</span>
+            {% if 'amount' in k or 'pending' in k %}
+              <strong>{{ currency_symbol }}{{ "%.2f"|format(v) }}</strong>
+            {% else %}
+              <strong>{{ v }}</strong>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Data Table Display -->
+  <div class="panel-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        
+        {% if report_type == 'daily_attendance' %}
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Mess Type</th>
+              <th>College</th>
+              <th>Attendance Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in report_data %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ r.student_id }}</strong></td>
+                <td>{{ r.full_name }}</td>
+                <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
+                <td>{{ r.college_name }}</td>
+                <td>
+                  {% if r.status == 'Present' %}
+                    <span class="badge badge-active">Present</span>
+                  {% else %}
+                    <span class="badge badge-expired">Absent</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        {% elif report_type == 'monthly_attendance' %}
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Mess Type</th>
+              <th>Total Marked</th>
+              <th>Present Days</th>
+              <th>Absent Days</th>
+              <th>Attendance %</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in report_data %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ r.student_id }}</strong></td>
+                <td>{{ r.full_name }}</td>
+                <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
+                <td>{{ r.total_marked }}</td>
+                <td style="color: #059669; font-weight: 600;">{{ r.present_days or 0 }}</td>
+                <td style="color: #dc2626; font-weight: 600;">{{ r.absent_days or 0 }}</td>
+                <td>
+                  {% if r.total_marked and r.total_marked > 0 %}
+                    <strong>{{ "%.1f"|format((r.present_days / r.total_marked) * 100) }}%</strong>
+                  {% else %}
+                    0%
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        {% elif report_type == 'payments_collection' %}
+          <thead>
+            <tr>
+              <th>Receipt No</th>
+              <th>Date</th>
+              <th>Student ID & Name</th>
+              <th>Mess Type</th>
+              <th>Amount Collected</th>
+              <th>Method</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in report_data %}
+              <tr>
+                <td><strong>{{ r.receipt_no }}</strong></td>
+                <td>{{ r.payment_date }}</td>
+                <td><strong>{{ r.full_name }}</strong> ({{ r.student_id }})</td>
+                <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
+                <td style="color: #059669; font-weight: 700;">{{ currency_symbol }}{{ "%.2f"|format(r.amount) }}</td>
+                <td><span class="badge" style="background:#f1f5f9; color:#334155;">{{ r.payment_method }}</span></td>
+                <td style="font-size: 12px; color: var(--text-muted);">{{ r.notes or '--' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        {% elif report_type == 'pending_fees' %}
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Mobile</th>
+              <th>Mess Type</th>
+              <th>Status</th>
+              <th>Total Plan Fee</th>
+              <th>Amount Paid</th>
+              <th>Outstanding Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in report_data %}
+              <tr>
+                <td><strong>{{ r.student_id }}</strong></td>
+                <td><strong>{{ r.full_name }}</strong></td>
+                <td>{{ r.mobile }}</td>
+                <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
+                <td><span class="badge badge-active">{{ r.status }}</span></td>
+                <td>{{ currency_symbol }}{{ "%.2f"|format(r.total_fee) }}</td>
+                <td style="color: #059669;">{{ currency_symbol }}{{ "%.2f"|format(r.paid) }}</td>
+                <td style="color: #b45309; font-weight: 700; font-size: 15px;">{{ currency_symbol }}{{ "%.2f"|format(r.pending_amount) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        {% elif report_type == 'expired_students' %}
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Full Name</th>
+              <th>Mobile</th>
+              <th>Mess Type</th>
+              <th>Plan Validity</th>
+              <th>Days Expired</th>
+              <th>Pending Dues</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in report_data %}
+              <tr>
+                <td><strong>{{ r.student_id }}</strong></td>
+                <td><strong>{{ r.full_name }}</strong></td>
+                <td>{{ r.mobile }}</td>
+                <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
+                <td>{{ r.start_date }} to {{ r.current_expiry_date }}</td>
+                <td><span class="badge badge-expired">{{ r.days_expired|int }} days ago</span></td>
+                <td style="color: {% if r.balance > 0 %}#b45309{% else %}#059669{% endif %}; font-weight: 700;">
+                  {{ currency_symbol }}{{ "%.2f"|format(r.balance) }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        {% elif report_type == 'absent_adjustments' %}
+          <thead>
+            <tr>
+              <th>Adj ID</th>
+              <th>Student ID & Name</th>
+              <th>Mess Type</th>
+              <th>Credited Days</th>
+              <th>Original Expiry</th>
+              <th>Extended Expiry</th>
+              <th>Approved Date</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in report_data %}
+              <tr>
+                <td><strong>#ADJ-{{ r.id }}</strong></td>
+                <td><strong>{{ r.student_name }}</strong> ({{ r.student_id }})</td>
+                <td><span class="badge {% if r.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">{{ r.mess_type }}</span></td>
+                <td><strong style="color: #059669;">+{{ r.credited_days }} Days Free Extension</strong></td>
+                <td>{{ r.original_expiry_date }}</td>
+                <td><strong>{{ r.updated_expiry_date }}</strong></td>
+                <td>{{ r.approved_date }}</td>
+                <td style="font-size: 12px; color: var(--text-muted);">{{ r.admin_notes or '--' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        {% endif %}
+
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

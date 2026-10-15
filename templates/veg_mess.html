@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Pure Veg Mess Management{% endblock %}
+{% block page_title %}Pure Veg Mess Management{% endblock %}
+
+{% block content %}
+<!-- Top Metrics for Veg Mess -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Total Veg Students</span>
+      <div class="stat-icon success">🥗</div>
+    </div>
+    <div class="stat-value" style="color: var(--veg-color);">{{ total_veg }}</div>
+    <div class="stat-footer">Enrolled in vegetarian dining</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Active Veg Diners</span>
+      <div class="stat-icon success">🟢</div>
+    </div>
+    <div class="stat-value" style="color: #059669;">{{ active_veg }}</div>
+    <div class="stat-footer">Currently eligible for meals</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Expired Veg Plans</span>
+      <div class="stat-icon danger">⚠️</div>
+    </div>
+    <div class="stat-value" style="color: var(--danger);">{{ expired_veg }}</div>
+    <div class="stat-footer">Requires renewal</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Veg Collections</span>
+      <div class="stat-icon primary">💰</div>
+    </div>
+    <div class="stat-value" style="color: var(--primary);">{{ currency_symbol }}{{ "%.2f"|format(veg_collected) }}</div>
+    <div class="stat-footer">Total payments received</div>
+  </div>
+</div>
+
+<!-- Search, Filter & Sort Toolbar -->
+<div class="panel" style="margin-bottom: 24px;">
+  <div class="panel-body" style="padding: 18px 24px;">
+    <form method="GET" action="{{ url_for('veg_mess') }}">
+      <div class="toolbar" style="margin-bottom: 0;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="form-control" name="search" value="{{ search }}" placeholder="Search Veg students by name, ID, or mobile...">
+        </div>
+
+        <div class="filter-group">
+          <!-- Status Filter -->
+          <select name="status" class="form-control form-select" style="width: auto;" onchange="this.form.submit()">
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>🟢 Active</option>
+            <option value="Expired" {% if status_filter == 'Expired' %}selected{% endif %}>🔴 Expired</option>
+            <option value="Deactivated" {% if status_filter == 'Deactivated' %}selected{% endif %}>⚪ Deactivated</option>
+          </select>
+
+          <!-- Sorting -->
+          <select name="sort_by" class="form-control form-select" style="width: auto;" onchange="this.form.submit()">
+            <option value="remaining_days_asc" {% if sort_by == 'remaining_days_asc' %}selected{% endif %}>Days Remaining (Low to High)</option>
+            <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Student Name (A-Z)</option>
+            <option value="expiry_date_asc" {% if sort_by == 'expiry_date_asc' %}selected{% endif %}>Expiry Date (Earliest First)</option>
+          </select>
+
+          <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+          {% if search or status_filter != 'all' %}
+            <a href="{{ url_for('veg_mess') }}" class="btn btn-secondary btn-sm">Reset</a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Veg Students Table -->
+<div class="panel">
+  <div class="panel-header">
+    <h3 class="panel-title">🥗 Pure Veg Students ({{ students|length }})</h3>
+    <a href="{{ url_for('admission') }}" class="btn btn-success btn-sm">
+      <span>➕</span> Admit Veg Student
+    </a>
+  </div>
+
+  <div class="panel-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student Name</th>
+            <th>Student ID</th>
+            <th>Mobile Number</th>
+            <th>College</th>
+            <th>Start Date</th>
+            <th>Remaining Days</th>
+            <th>Expiry Date</th>
+            <th>Payment Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if students %}
+            {% for s in students %}
+              <tr>
+                <td>
+                  <strong><a href="{{ url_for('student_profile', student_id=s.student_id) }}" style="color: var(--primary);">{{ s.full_name }}</a></strong>
+                </td>
+                <td><strong>{{ s.student_id }}</strong></td>
+                <td>{{ s.mobile }}</td>
+                <td><span style="font-size: 12.5px; color: var(--text-muted);">{{ s.college_name }}</span></td>
+                <td>{{ s.start_date }}</td>
+                <td>
+                  {% if s.remaining_days < 0 %}
+                    <span class="badge badge-expired">Expired ({{ (s.remaining_days * -1)|int }}d ago)</span>
+                  {% elif s.remaining_days <= 3 %}
+                    <span class="badge badge-warning">⚠️ {{ s.remaining_days|int }} days</span>
+                  {% else %}
+                    <span style="font-weight: 600; color: #059669;">{{ s.remaining_days|int }} days</span>
+                  {% endif %}
+                </td>
+                <td><strong>{{ s.current_expiry_date }}</strong></td>
+                <td>
+                  {% if s.balance <= 0 and s.total_paid > 0 %}
+                    <span class="badge badge-paid">Paid</span>
+                  {% elif s.total_paid > 0 and s.balance > 0 %}
+                    <span class="badge badge-partial">Partial ({{ currency_symbol }}{{ "%.2f"|format(s.balance) }} due)</span>
+                  {% else %}
+                    <span class="badge badge-pending">Pending</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div style="display: flex; gap: 6px;">
+                    <a href="{{ url_for('student_profile', student_id=s.student_id) }}" class="btn btn-outline btn-sm" title="View Profile">
+                      👁️
+                    </a>
+                    {% if s.balance > 0 %}
+                      <button class="btn btn-success btn-sm" title="Add Payment" onclick="populatePaymentModal('{{ s.student_id }}', '{{ s.full_name }}', '{{ s.balance }}')">
+                        💳
+                      </button>
+                    {% endif %}
+                    {% if s.status == 'Expired' or s.remaining_days <= 3 %}
+                      <button class="btn btn-primary btn-sm" title="Renew Mess" onclick="populateRenewModal('{{ s.student_id }}', '{{ s.full_name }}', 'Veg')">
+                        🔄
+                      </button>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                🥗 No pure veg mess students found matching your filters.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
