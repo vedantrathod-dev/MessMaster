@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.full_name }} - Profile{% endblock %}
+{% block page_title %}Student Profile & Dining Record{% endblock %}
+
+{% block content %}
+<!-- Student Header Card -->
+<div class="panel" style="margin-bottom: 24px;">
+  <div class="panel-body">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+      
+      <div style="display: flex; gap: 18px; align-items: center;">
+        <div style="width: 64px; height: 64px; border-radius: var(--radius-lg); background: linear-gradient(135deg, #4f46e5, #0ea5e9); color: white; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800;">
+          {{ student.full_name[0] }}
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h2 style="font-size: 22px;">{{ student.full_name }}</h2>
+            <span class="badge {% if student.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+              {{ student.mess_type }} Mess
+            </span>
+            {% if student.status == 'Active' %}
+              <span class="badge badge-active">Active</span>
+            {% elif student.status == 'Expired' %}
+              <span class="badge badge-expired">Expired</span>
+            {% else %}
+              <span class="badge" style="background:#e2e8f0; color:#475569;">Deactivated</span>
+            {% endif %}
+          </div>
+          <div style="font-size: 13.5px; color: var(--text-muted); margin-top: 4px;">
+            <strong>ID:</strong> {{ student.student_id }} &bull;
+            <strong>Mobile:</strong> {{ student.mobile }} &bull;
+            <strong>College:</strong> {{ student.college_name }} &bull;
+            <strong>Admitted:</strong> {{ student.admission_date }}
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-outline btn-sm" onclick="openModal('editStudentModal')">
+          ✏️ Edit Details
+        </button>
+        {% if balance > 0 %}
+          <button class="btn btn-success btn-sm" onclick="populatePaymentModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ balance }}')">
+            💳 Add Payment
+          </button>
+        {% endif %}
+        <button class="btn btn-primary btn-sm" onclick="populateRenewModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ student.mess_type }}')">
+          🔄 Renew Plan
+        </button>
+        <form action="{{ url_for('toggle_student_status', student_id=student.student_id) }}" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Toggle status between Active and Deactivated?')">
+            {% if student.status == 'Deactivated' %}🟢 Reactivate{% else %}⚪ Deactivate{% endif %}
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Plan Status & Stats Row -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+  <!-- Days Remaining -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Plan Expiry Status</span>
+      <div class="stat-icon {% if current_plan and current_plan.remaining_days < 0 %}danger{% elif current_plan and current_plan.remaining_days <= 3 %}warning{% else %}success{% endif %}">
+        ⏳
+      </div>
+    </div>
+    <div class="stat-value">
+      {% if current_plan %}
+        {% if current_plan.remaining_days < 0 %}
+          Expired
+        {% else %}
+          {{ current_plan.remaining_days|int }} Days
+        {% endif %}
+      {% else %}
+        No Plan
+      {% endif %}
+    </div>
+    <div class="stat-footer">
+      Expiry: {{ current_plan.current_expiry_date if current_plan else 'N/A' }}
+      {% if current_plan and current_plan.total_extension_days > 0 %}
+        (+{{ current_plan.total_extension_days }}d extension)
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Outstanding Balance -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Pending Dues</span>
+      <div class="stat-icon {% if balance > 0 %}warning{% else %}success{% endif %}">💰</div>
+    </div>
+    <div class="stat-value" style="color: {% if balance > 0 %}#b45309{% else %}#059669{% endif %};">
+      {{ currency_symbol }}{{ "%.2f"|format(balance) }}
+    </div>
+    <div class="stat-footer">
+      Total Fee: {{ currency_symbol }}{{ "%.2f"|format(total_fees) }} &bull; Paid: {{ currency_symbol }}{{ "%.2f"|format(total_paid) }}
+    </div>
+  </div>
+
+  <!-- Attendance Rate -->
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Attendance Rate</span>
+      <div class="stat-icon info">📊</div>
+    </div>
+    <div class="stat-value">
+      {% if att_stats.total_days and att_stats.total_days > 0 %}
+        {{ "%.1f"|format((att_stats.present_days / att_stats.total_days) * 100) }}%
+      {% else %}
+        0%
+      {% endif %}
+    </div>
+    <div class="stat-footer">
+      {{ att_stats.present_days or 0 }} Present &bull; {{ att_stats.absent_days or 0 }} Absent
+    </div>
+  </div>
+</div>
+
+<!-- Consecutive Absence Alert Callout if eligible -->
+{% if eligible_streaks %}
+  {% for streak in eligible_streaks %}
+    <div class="alert alert-warning" style="margin-bottom: 24px;">
+      <div>
+        <strong>⏱️ Absence Adjustment Detected:</strong> This student was absent for {{ streak.consecutive_count }} consecutive days ({{ streak.absent_dates_str }}).
+        Eligible for an extension of {{ streak.credited_days }} days! New expiry would be <strong>{{ streak.proposed_expiry_date }}</strong>.
+      </div>
+      <form action="{{ url_for('approve_detected') }}" method="POST" style="margin-left: 12px;">
+        <input type="hidden" name="student_id" value="{{ streak.student_id }}">
+        <input type="hidden" name="plan_id" value="{{ streak.plan_id }}">
+        <input type="hidden" name="consecutive_count" value="{{ streak.consecutive_count }}">
+        <input type="hidden" name="absent_dates_json" value='{{ streak.absent_dates|tojson }}'>
+        <input type="hidden" name="original_expiry_date" value="{{ streak.original_expiry_date }}">
+        <input type="hidden" name="proposed_expiry_date" value="{{ streak.proposed_expiry_date }}">
+        <button type="submit" class="btn btn-success btn-sm">Approve Extension</button>
+      </form>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Tabs for History Records -->
+<div class="dashboard-grid">
+  
+  <!-- Left Side: Payment Transactions -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">💳 Payment Transactions & Receipts</h3>
+      {% if balance > 0 %}
+        <button class="btn btn-success btn-sm" onclick="populatePaymentModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ balance }}')">
+          + Pay
+        </button>
+      {% endif %}
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Receipt No</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if payments %}
+              {% for p in payments %}
+                <tr>
+                  <td><strong>{{ p.receipt_no }}</strong></td>
+                  <td>{{ p.payment_date }}</td>
+                  <td style="font-weight: 700; color: #059669;">{{ currency_symbol }}{{ "%.2f"|format(p.amount) }}</td>
+                  <td><span class="badge" style="background:#f1f5f9; color:#334155;">{{ p.payment_method }}</span></td>
+                  <td>
+                    <a href="{{ url_for('view_receipt', receipt_no=p.receipt_no) }}" class="btn btn-outline btn-sm" target="_blank" title="Print Receipt">
+                      🖨️ Receipt
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                  No payment records found.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Recent Attendance -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">📅 Recent Attendance (Last 30 Days)</h3>
+      <a href="{{ url_for('attendance') }}" class="btn btn-outline btn-sm">Daily Sheet</a>
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Marked By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if recent_attendance %}
+              {% for a in recent_attendance %}
+                <tr>
+                  <td>{{ a.date }}</td>
+                  <td>
+                    {% if a.status == 'Present' %}
+                      <span class="badge badge-active">Present</span>
+                    {% else %}
+                      <span class="badge badge-expired">Absent</span>
+                    {% endif %}
+                  </td>
+                  <td style="font-size: 11px; color: var(--text-muted);">{{ a.marked_by }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="3" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                  No attendance logged yet.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Mess Plan History & Absence Adjustments Panels -->
+<div class="dashboard-grid">
+  <!-- Mess Plan History -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">📋 Mess Plan & Renewal History</h3>
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Duration</th>
+              <th>Start Date</th>
+              <th>Original Expiry</th>
+              <th>Final Expiry</th>
+              <th>Extensions</th>
+              <th>Fee</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if plan_history %}
+              {% for pl in plan_history %}
+                <tr>
+                  <td>{{ pl.plan_duration_days }} Days</td>
+                  <td>{{ pl.start_date }}</td>
+                  <td>{{ pl.original_expiry_date }}</td>
+                  <td><strong>{{ pl.current_expiry_date }}</strong></td>
+                  <td>+{{ pl.total_extension_days }} days</td>
+                  <td>{{ currency_symbol }}{{ "%.2f"|format(pl.total_fee) }}</td>
+                  <td>
+                    {% if pl.is_current %}
+                      <span class="badge badge-active">Current Active</span>
+                    {% elif pl.status == 'Renewed' %}
+                      <span class="badge" style="background:#e0f2fe; color:#0369a1;">Renewed</span>
+                    {% else %}
+                      <span class="badge badge-expired">Expired</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Absence Adjustments History -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">⏱️ Absence Adjustments History</h3>
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Requested Date</th>
+              <th>Absent Days</th>
+              <th>Credit</th>
+              <th>Status</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if adjustments %}
+              {% for adj in adjustments %}
+                <tr>
+                  <td>{{ adj.requested_date }}</td>
+                  <td>{{ adj.consecutive_days_count }} days</td>
+                  <td><strong>+{{ adj.credited_days }} days</strong></td>
+                  <td>
+                    {% if adj.status == 'Approved' %}
+                      <span class="badge badge-active">Approved</span>
+                    {% elif adj.status == 'Pending' %}
+                      <span class="badge badge-warning">Pending</span>
+                    {% else %}
+                      <span class="badge badge-expired">Rejected</span>
+                    {% endif %}
+                  </td>
+                  <td style="font-size: 11px; color: var(--text-muted);">{{ adj.admin_notes or '--' }}</td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 20px; color: var(--text-muted);">
+                  No absence adjustments recorded.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Student Details -->
+<div class="modal-overlay" id="editStudentModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 class="modal-title">Edit Student Details</h3>
+      <button class="modal-close" onclick="closeModal('editStudentModal')">&times;</button>
+    </div>
+    <form action="{{ url_for('edit_student', student_id=student.student_id) }}" method="POST">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="edit_full_name">Full Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="full_name" id="edit_full_name" value="{{ student.full_name }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit_mobile">Mobile Number <span class="required">*</span></label>
+          <input type="tel" class="form-control" name="mobile" id="edit_mobile" value="{{ student.mobile }}" pattern="[0-9]{10}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit_college">College / Institute <span class="required">*</span></label>
+          <input type="text" class="form-control" name="college_name" id="edit_college" value="{{ student.college_name }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit_mess_type">Mess Type <span class="required">*</span></label>
+          <select class="form-control form-select" name="mess_type" id="edit_mess_type" required>
+            <option value="Veg" {% if student.mess_type == 'Veg' %}selected{% endif %}>Pure Veg Mess</option>
+            <option value="Non-Veg" {% if student.mess_type == 'Non-Veg' %}selected{% endif %}>Non-Veg Mess</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('editStudentModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

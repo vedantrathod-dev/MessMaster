@@ -16,10 +16,50 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import urllib.request
 import urllib.error
 
+from flask import send_from_directory
+
 import database
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+STATIC_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'api', 'static'),
+    os.path.join(os.getcwd(), 'static'),
+    os.path.join(os.getcwd(), 'api', 'static')
+]
+STATIC_DIR = next((d for d in STATIC_DIRS if os.path.exists(d)), os.path.join(BASE_DIR, 'static'))
+
+TEMPLATE_DIRS = [
+    os.path.join(BASE_DIR, 'templates'),
+    os.path.join(BASE_DIR, 'api', 'templates'),
+    os.path.join(os.getcwd(), 'templates'),
+    os.path.join(os.getcwd(), 'api', 'templates')
+]
+TEMPLATE_DIR = next((d for d in TEMPLATE_DIRS if os.path.exists(d)), os.path.join(BASE_DIR, 'templates'))
+
+app = Flask(
+    __name__,
+    static_folder=STATIC_DIR,
+    static_url_path='/static',
+    template_folder=TEMPLATE_DIR
+)
 app.secret_key = os.environ.get('SECRET_KEY', 'college_mess_secret_key_2026_antigravity')
+
+# Explicit static handler with text/css Content-Type enforcement
+@app.route('/static/<path:filename>')
+def serve_custom_static(filename):
+    for s_dir in STATIC_DIRS:
+        target = os.path.join(s_dir, filename)
+        if os.path.exists(target):
+            response = make_response(send_from_directory(s_dir, filename))
+            if filename.endswith('.css'):
+                response.headers['Content-Type'] = 'text/css; charset=utf-8'
+            elif filename.endswith('.js'):
+                response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+            return response
+    return "Static file not found", 404
 
 # Firebase Configuration provided by user
 FIREBASE_CONFIG = {

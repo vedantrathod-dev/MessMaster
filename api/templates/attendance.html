@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Attendance Tracker{% endblock %}
+{% block page_title %}Daily Mess Attendance{% endblock %}
+
+{% block content %}
+<!-- Top Attendance Summary & Date Selector -->
+<div class="panel" style="margin-bottom: 24px;">
+  <div class="panel-body">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      
+      <!-- Date Selector Form -->
+      <form method="GET" action="{{ url_for('attendance') }}" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <label for="attDateSelect" style="font-weight: 700; font-size: 14px;">Select Dining Date:</label>
+        <input type="date" class="form-control" name="date" id="attDateSelect" value="{{ selected_date }}" style="width: auto;" onchange="this.form.submit()">
+        
+        <select name="mess_type" class="form-control form-select" style="width: auto;" onchange="this.form.submit()">
+          <option value="all" {% if mess_filter == 'all' %}selected{% endif %}>All Mess Types</option>
+          <option value="Veg" {% if mess_filter == 'Veg' %}selected{% endif %}>🥗 Pure Veg</option>
+          <option value="Non-Veg" {% if mess_filter == 'Non-Veg' %}selected{% endif %}>🍗 Non-Veg</option>
+        </select>
+        <button type="submit" class="btn btn-outline btn-sm">Load Sheet</button>
+      </form>
+
+      <!-- Day Stats Pill Badges -->
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <span class="badge badge-active" style="padding: 6px 14px; font-size: 13px;">
+          🟢 Present: {{ summary.present_count or 0 }}
+        </span>
+        <span class="badge badge-expired" style="padding: 6px 14px; font-size: 13px;">
+          🔴 Absent: {{ summary.absent_count or 0 }}
+        </span>
+        <span class="badge" style="background:#f1f5f9; color:#475569; padding: 6px 14px; font-size: 13px;">
+          👥 Active Students: {{ total_active }}
+        </span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Main Attendance Marking Form -->
+<form action="{{ url_for('attendance') }}" method="POST">
+  <input type="hidden" name="attendance_date" value="{{ selected_date }}">
+
+  <div class="panel">
+    <div class="panel-header">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <h3 class="panel-title">📅 Student Attendance Sheet for {{ selected_date }}</h3>
+        <span class="badge" style="background: var(--primary-light); color: var(--primary);">{{ students|length }} Students</span>
+      </div>
+
+      <!-- Bulk Selection Helpers -->
+      <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn btn-success btn-sm" id="btnMarkAllPresent">
+          ✓ Mark All Present
+        </button>
+        <button type="button" class="btn btn-danger btn-sm" id="btnMarkAllAbsent">
+          ✕ Mark All Absent
+        </button>
+        <button type="submit" class="btn btn-primary btn-sm">
+          💾 Save Attendance
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Student ID</th>
+              <th>Student Name</th>
+              <th>Mess Plan</th>
+              <th>Dining Status</th>
+              <th style="text-align: center; width: 260px;">Attendance Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if students %}
+              {% for s in students %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>
+                    <strong><a href="{{ url_for('student_profile', student_id=s.student_id) }}" style="color: var(--primary);">{{ s.student_id }}</a></strong>
+                  </td>
+                  <td>
+                    <div style="font-weight: 600;">{{ s.full_name }}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">{{ s.college_name }} &bull; {{ s.mobile }}</div>
+                  </td>
+                  <td>
+                    <span class="badge {% if s.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+                      {{ s.mess_type }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if s.student_status == 'Active' %}
+                      <span class="badge badge-active">Active</span>
+                    {% else %}
+                      <span class="badge badge-expired">Expired</span>
+                    {% endif %}
+                  </td>
+                  <td style="text-align: center;">
+                    <div style="display: inline-flex; background: #f1f5f9; border-radius: var(--radius-md); padding: 4px; gap: 6px;">
+                      
+                      <!-- Radio Present -->
+                      <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; transition: var(--transition);">
+                        <input type="radio" name="att_status_{{ s.student_id }}" value="Present" 
+                          {% if s.attendance_status == 'Present' or s.attendance_status == 'Unmarked' %}checked{% endif %}>
+                        <span style="color: #065f46;">Present</span>
+                      </label>
+
+                      <!-- Radio Absent -->
+                      <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 4px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; transition: var(--transition);">
+                        <input type="radio" name="att_status_{{ s.student_id }}" value="Absent" 
+                          {% if s.attendance_status == 'Absent' %}checked{% endif %}>
+                        <span style="color: #991b1b;">Absent</span>
+                      </label>
+
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                  No active students found for attendance.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-body" style="background-color: #f8fafc; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end;">
+      <button type="submit" class="btn btn-primary btn-lg">
+        💾 Save & Update Attendance Records
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

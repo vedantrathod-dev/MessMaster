@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In &bull; MessMaster Management Portal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.2">
+  <style>
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      padding: 24px 16px;
+    }
+    .login-card {
+      background: #ffffff;
+      border-radius: var(--radius-xl);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 440px;
+      padding: 36px 32px;
+      position: relative;
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .login-logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin: 0 auto 12px;
+      box-shadow: 0 8px 16px rgba(79, 70, 229, 0.3);
+    }
+    .login-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .login-sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .auth-divider:not(:empty)::before {
+      margin-right: 12px;
+    }
+    .auth-divider:not(:empty)::after {
+      margin-left: 12px;
+    }
+    .btn-google {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 11px 16px;
+      background-color: #ffffff;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: var(--shadow-sm);
+    }
+    .btn-google:hover {
+      background-color: #f8fafc;
+      border-color: #94a3b8;
+      box-shadow: var(--shadow-md);
+    }
+    .btn-google svg {
+      width: 18px;
+      height: 18px;
+    }
+    .demo-credentials {
+      margin-top: 20px;
+      padding: 12px 14px;
+      background-color: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      color: #475569;
+    }
+    .demo-credentials code {
+      background-color: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .auth-msg {
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .auth-msg.error {
+      background-color: var(--danger-bg);
+      color: #991b1b;
+      border-left: 3px solid var(--danger);
+      display: block;
+    }
+    .auth-msg.info {
+      background-color: var(--info-bg);
+      color: #075985;
+      border-left: 3px solid var(--info);
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="login-logo">🍽️</div>
+        <h1 class="login-title">MessMaster Portal</h1>
+        <p class="login-sub">College Dining Operations &bull; Administrator Access</p>
+      </div>
+
+      <!-- Flash messages from server -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="margin-bottom: 16px;">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div id="authStatusBox" class="auth-msg"></div>
+
+      <!-- 1. Firebase Google Sign-In Button -->
+      <button type="button" class="btn-google" id="btnGoogleSignIn">
+        <svg viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        <span>Sign in with Google (Firebase)</span>
+      </button>
+
+      <div class="auth-divider">or sign in with credentials</div>
+
+      <!-- 2. Traditional / Firebase Email-Password Form -->
+      <form action="{{ url_for('login') }}" method="POST" id="loginForm">
+        <div class="form-group">
+          <label class="form-label" for="username">Username or Firebase Email</label>
+          <input type="text" class="form-control" id="username" name="username" value="admin" placeholder="admin or you@email.com" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <input type="password" class="form-control" id="password" name="password" value="admin123" placeholder="Enter password" required>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1; padding: 11px;">
+            <span>🔐</span> Sign In
+          </button>
+          <button type="button" class="btn btn-outline" id="btnFirebaseRegister" title="Register new admin with Firebase" style="padding: 11px 14px;">
+            <span>➕</span> Register
+          </button>
+        </div>
+      </form>
+
+      <div class="demo-credentials">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span>Default Demo Credentials:</span>
+          <button type="button" id="btnQuickDemo" style="background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 11px; text-decoration: underline;">
+            Fill Demo
+          </button>
+        </div>
+        <div style="margin-top: 4px;">
+          User: <code>admin</code> &nbsp;|&nbsp; Pass: <code>admin123</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK (v10 modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+    import { 
+      getAuth, 
+      signInWithPopup, 
+      GoogleAuthProvider,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+    // User's Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "{{ firebase_config.apiKey }}",
+      authDomain: "{{ firebase_config.authDomain }}",
+      projectId: "{{ firebase_config.projectId }}",
+      storageBucket: "{{ firebase_config.storageBucket }}",
+      messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+      appId: "{{ firebase_config.appId }}"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    const statusBox = document.getElementById('authStatusBox');
+    function showMsg(text, type='info') {
+      statusBox.textContent = text;
+      statusBox.className = `auth-msg ${type}`;
+    }
+
+    // Send Firebase ID Token to backend to establish Flask session
+    async function handleFirebaseToken(user) {
+      try {
+        showMsg("Authenticating with MessMaster server...", "info");
+        const token = await user.getIdToken();
+        const res = await fetch("{{ url_for('api_firebase_login') }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            idToken: token,
+            email: user.email,
+            displayName: user.displayName || user.email.split('@')[0],
+            uid: user.uid
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.redirect) {
+          showMsg("Authentication successful! Redirecting...", "info");
+          window.location.href = data.redirect;
+        } else {
+          showMsg(data.message || "Server authentication error.", "error");
+        }
+      } catch (err) {
+        showMsg("Network error verifying token: " + err.message, "error");
+      }
+    }
+
+    // 1. Google Sign-In with Popup
+    const btnGoogle = document.getElementById('btnGoogleSignIn');
+    if (btnGoogle) {
+      btnGoogle.addEventListener('click', async () => {
+        try {
+          showMsg("Opening Google Sign-In window...", "info");
+          const result = await signInWithPopup(auth, googleProvider);
+          await handleFirebaseToken(result.user);
+        } catch (error) {
+          if (error.code !== 'auth/popup-closed-by-user') {
+            showMsg("Google Sign-In failed: " + error.message, "error");
+          } else {
+            statusBox.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    // 2. Register new Firebase User with Email/Password
+    const btnRegister = document.getElementById('btnFirebaseRegister');
+    if (btnRegister) {
+      btnRegister.addEventListener('click', async () => {
+        const email = document.getElementById('username').value.trim();
+        const pass = document.getElementById('password').value;
+
+        if (!email.includes('@')) {
+          showMsg("Please enter a valid email address in the username field to register with Firebase.", "error");
+          return;
+        }
+        if (pass.length < 6) {
+          showMsg("Password must be at least 6 characters.", "error");
+          return;
+        }
+
+        try {
+          showMsg("Registering new account with Firebase...", "info");
+          const result = await createUserWithEmailAndPassword(auth, email, pass);
+          await handleFirebaseToken(result.user);
+        } catch (err) {
+          showMsg("Registration error: " + err.message, "error");
+        }
+      });
+    }
+
+    // 3. Quick Demo Fill
+    document.getElementById('btnQuickDemo').addEventListener('click', () => {
+      document.getElementById('username').value = 'admin';
+      document.getElementById('password').value = 'admin123';
+      statusBox.style.display = 'none';
+    });
+  </script>
+</body>
+</html>

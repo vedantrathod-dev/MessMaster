@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Expired Mess Students{% endblock %}
+{% block page_title %}Expired Mess Plans & Renewal Queue{% endblock %}
+
+{% block content %}
+<!-- Top Alert Banner -->
+<div class="panel" style="margin-bottom: 24px; border-left: 4px solid var(--danger); background: linear-gradient(90deg, #fff1f2 0%, #ffffff 100%);">
+  <div class="panel-body">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 22px;">🚫</span>
+          <h3 style="font-size: 16px; font-weight: 700; color: #9f1239;">Expired Mess Membership Queue ({{ expired_students|length }})</h3>
+        </div>
+        <p style="font-size: 13.5px; color: #881337; margin-top: 4px;">
+          These students have crossed their plan expiry dates. They are automatically marked as <strong>Expired</strong> and excluded from active dining quotas.
+          Click <strong>Renew Mess</strong> to reactivate their dining plan with new dates and payment tracking.
+        </p>
+      </div>
+      <div>
+        <span class="badge badge-expired" style="font-size: 14px; padding: 6px 14px;">
+          {{ expired_students|length }} Expired Accounts
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Expired Students Table -->
+<div class="panel">
+  <div class="panel-header">
+    <h3 class="panel-title">⚠️ Expired Mess Students ({{ expired_students|length }})</h3>
+  </div>
+
+  <div class="panel-body" style="padding: 0;">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student Name & ID</th>
+            <th>Mobile Number</th>
+            <th>College</th>
+            <th>Mess Type</th>
+            <th>Expiry Date</th>
+            <th>Days Since Expired</th>
+            <th>Total Plan Fees</th>
+            <th>Amount Paid</th>
+            <th>Pending Balance</th>
+            <th style="text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if expired_students %}
+            {% for s in expired_students %}
+              <tr>
+                <td>
+                  <strong><a href="{{ url_for('student_profile', student_id=s.student_id) }}" style="color: var(--primary);">{{ s.full_name }}</a></strong>
+                  <div style="font-size: 11px; color: var(--text-muted);">{{ s.student_id }}</div>
+                </td>
+                <td>{{ s.mobile }}</td>
+                <td><span style="font-size: 12.5px; color: var(--text-muted);">{{ s.college_name }}</span></td>
+                <td>
+                  <span class="badge {% if s.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+                    {{ s.mess_type }}
+                  </span>
+                </td>
+                <td>
+                  <strong style="color: var(--danger);">{{ s.current_expiry_date }}</strong>
+                </td>
+                <td>
+                  <span class="badge badge-expired">
+                    {{ s.days_since_expiry|int }} days ago
+                  </span>
+                </td>
+                <td>{{ currency_symbol }}{{ "%.2f"|format(s.total_fee) }}</td>
+                <td style="color: #059669; font-weight: 600;">{{ currency_symbol }}{{ "%.2f"|format(s.total_paid) }}</td>
+                <td>
+                  {% if s.balance > 0 %}
+                    <strong style="color: #b45309;">{{ currency_symbol }}{{ "%.2f"|format(s.balance) }}</strong>
+                  {% else %}
+                    <span style="color: #059669; font-size: 12.5px;">Nil (Clear)</span>
+                  {% endif %}
+                </td>
+                <td style="text-align: right;">
+                  <button class="btn btn-primary btn-sm" onclick="populateRenewModal('{{ s.student_id }}', '{{ s.full_name }}', '{{ s.mess_type }}')">
+                    🔄 Renew Mess
+                  </button>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 36px; color: var(--text-muted);">
+                ✨ No expired mess students! All registered students currently hold valid active plans.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

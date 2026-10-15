@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Receipt #{{ payment.receipt_no }} - {{ mess_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.2">
+  <style>
+    body {
+      background-color: #f1f5f9;
+      padding: 30px 16px;
+    }
+    .print-actions {
+      max-width: 650px;
+      margin: 0 auto 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen Actions Bar (hidden on print) -->
+  <div class="print-actions btn-print-hide">
+    <a href="{{ url_for('payments') }}" class="btn btn-secondary btn-sm">
+      &larr; Back to Payments
+    </a>
+    <div style="display: flex; gap: 10px;">
+      <a href="{{ url_for('student_profile', student_id=payment.student_id) }}" class="btn btn-outline btn-sm">
+        View Student Profile
+      </a>
+      <button onclick="window.print()" class="btn btn-primary btn-sm">
+        🖨️ Print Receipt / Save PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- Official Receipt Container -->
+  <div class="receipt-container">
+    
+    <!-- Header -->
+    <div class="receipt-header">
+      <div style="font-size: 32px; margin-bottom: 6px;">🍽️</div>
+      <h1 class="receipt-title">{{ mess_name }}</h1>
+      <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+        {{ college_name }} &bull; Student Mess Facility
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+        Official Dining Fee Receipt &bull; Non-Transferable
+      </div>
+    </div>
+
+    <!-- Meta Information -->
+    <div class="receipt-meta">
+      <div>
+        <div style="color: var(--text-muted); font-size: 11.5px; text-transform: uppercase;">Receipt Number</div>
+        <strong style="font-size: 16px; color: var(--primary);">{{ payment.receipt_no }}</strong>
+        <div style="margin-top: 6px; font-size: 13px;">
+          <strong>Date:</strong> {{ payment.payment_date }}
+        </div>
+      </div>
+
+      <div style="text-align: right;">
+        <div style="color: var(--text-muted); font-size: 11.5px; text-transform: uppercase;">Payment Status</div>
+        {% if remaining_balance <= 0 %}
+          <span class="badge badge-paid" style="font-size: 13px;">Fully Paid</span>
+        {% else %}
+          <span class="badge badge-partial" style="font-size: 13px;">Partial Payment</span>
+        {% endif %}
+        <div style="margin-top: 6px; font-size: 13px;">
+          <strong>Method:</strong> {{ payment.payment_method }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Student Details Box -->
+    <div style="background-color: #f8fafc; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 14px 18px; margin-bottom: 24px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13.5px;">
+        <div><strong>Student Name:</strong> {{ payment.student_name }}</div>
+        <div><strong>Student ID:</strong> {{ payment.student_id }}</div>
+        <div><strong>Mobile:</strong> {{ payment.mobile }}</div>
+        <div><strong>College:</strong> {{ payment.college_name }}</div>
+        <div><strong>Mess Type:</strong> {{ payment.mess_type }} Mess</div>
+        <div><strong>Plan Duration:</strong> {{ payment.plan_duration_days }} Days</div>
+      </div>
+    </div>
+
+    <!-- Payment Breakdown Table -->
+    <table class="receipt-table">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--card-border); text-align: left; font-size: 13px; color: var(--text-muted);">
+          <th style="padding-bottom: 8px;">Description</th>
+          <th style="padding-bottom: 8px; text-align: right;">Amount ({{ currency_symbol }})</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>{{ payment.mess_type }} Mess Dining Plan Fee</strong>
+            <div style="font-size: 11.5px; color: var(--text-muted);">Validity: {{ payment.start_date }} to {{ payment.current_expiry_date }}</div>
+          </td>
+          <td style="text-align: right;">{{ currency_symbol }}{{ "%.2f"|format(payment.total_fee or 0) }}</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Current Payment Received</strong>
+            <div style="font-size: 11.5px; color: var(--text-muted);">Via {{ payment.payment_method }} - {{ payment.notes or 'Fee installment' }}</div>
+          </td>
+          <td style="text-align: right; font-weight: 700; color: #059669; font-size: 16px;">
+            {{ currency_symbol }}{{ "%.2f"|format(payment.amount) }}
+          </td>
+        </tr>
+        <tr>
+          <td>Cumulative Paid to Date</td>
+          <td style="text-align: right;">{{ currency_symbol }}{{ "%.2f"|format(payment.cumulative_paid or payment.amount) }}</td>
+        </tr>
+        <tr class="receipt-total-row">
+          <td style="padding-top: 14px;"><strong>Remaining Outstanding Balance</strong></td>
+          <td style="padding-top: 14px; text-align: right; color: {% if remaining_balance > 0 %}#b45309{% else %}#059669{% endif %}; font-size: 18px;">
+            <strong>{{ currency_symbol }}{{ "%.2f"|format(remaining_balance) }}</strong>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Footer & Signatures -->
+    <div class="receipt-footer">
+      <div>
+        <div>System-generated payment confirmation.</div>
+        <div style="margin-top: 2px;">Thank you for dining with us!</div>
+      </div>
+      <div class="signature-box">
+        Authorized Signature<br>
+        <span style="font-size: 10px; color: var(--text-light);">Mess Management Office</span>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
