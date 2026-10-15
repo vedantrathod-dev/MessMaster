@@ -3,6 +3,53 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
+  // 0. Dark / Light Theme Toggle System
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+  const themeToggleIcon = document.getElementById('themeToggleIcon');
+
+  function updateThemeUI(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('messmaster_theme', theme);
+    if (themeToggleIcon) {
+      themeToggleIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+    }
+  }
+
+  // Sync icon with currently active theme
+  const initialTheme = document.documentElement.getAttribute('data-theme') || localStorage.getItem('messmaster_theme') || 'dark';
+  updateThemeUI(initialTheme);
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', function () {
+      const activeTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+      updateThemeUI(nextTheme);
+    });
+  }
+
+  // Keyboard shortcut: ⌘ + Space or Ctrl + Space focuses Search
+  const searchInput = document.getElementById('globalSearchInput');
+  document.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.code === 'Space') {
+      e.preventDefault();
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const query = searchInput.value.trim();
+        if (query) {
+          window.location.href = `/students?search=${encodeURIComponent(query)}`;
+        }
+      }
+    });
+  }
+
   // 1. Mobile Sidebar & Backdrop Toggle
   const toggleBtn = document.getElementById('mobileMenuToggle');
   const closeBtn = document.getElementById('sidebarCloseBtn');

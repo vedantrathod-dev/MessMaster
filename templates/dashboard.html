@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Dashboard{% endblock %}
 {% block page_title %}Dashboard & Analytics{% endblock %}
 
 {% block content %}
 <!-- Quick Actions Bar -->
 <div class="toolbar" style="margin-bottom: 24px;">
-  <div style="font-size: 14px; font-weight: 600; color: var(--text-muted);">
+  <div style="font-size: 13.5px; font-weight: 600; color: var(--text-secondary);">
     Welcome to the Mess Control Center &bull; Live Operations Overview
   </div>
   <div class="filter-group">
@@ -22,7 +22,123 @@
   </div>
 </div>
 
-<!-- 10 Required Summary KPI Cards -->
+<!-- ===================================================================
+     HERO SECTION (EXACT REFERENCE IMAGE REPLICA)
+     =================================================================== -->
+<div class="dashboard-hero-layout">
+  
+  <!-- Hero Left: Total Balance & Area Spline Chart -->
+  <div class="hero-chart-card">
+    <div class="hero-card-header">
+      <div>
+        <div class="hero-balance-title">Total Balance</div>
+        <div class="hero-balance-amount">
+          <span>{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</span>
+          <span class="badge-upward">↑ 2.92%</span>
+        </div>
+      </div>
+      <div class="time-filter-pills">
+        <button class="time-pill-btn" onclick="updateHeroRange(365, this)">1 year</button>
+        <button class="time-pill-btn" onclick="updateHeroRange(180, this)">6 month</button>
+        <button class="time-pill-btn" onclick="updateHeroRange(90, this)">3 month</button>
+        <button class="time-pill-btn active" onclick="updateHeroRange(30, this)">1 month</button>
+      </div>
+    </div>
+
+    <!-- Chart Container with Tooltip Marker -->
+    <div class="hero-chart-container">
+      <div class="hero-tooltip-marker" id="chartTooltipMarker">
+        <span>{{ today_date }}</span>
+        <span style="color: var(--accent-orange); font-size: 13px;">↗</span>
+        <span>{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</span>
+      </div>
+      <div style="height: 220px; position: relative;">
+        <canvas id="heroSplineChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Hero Chart Timeline & Footnote -->
+    <div class="hero-timeline-wrap">
+      <div class="hero-timeline-bar">
+        <span class="timeline-month">Sep</span>
+        <span class="timeline-month">Oct</span>
+        <span class="timeline-month">Nov</span>
+        <span class="timeline-month active">Dec</span>
+        <span class="timeline-month">Jan</span>
+        <span class="timeline-month">Feb</span>
+      </div>
+      <div class="timeline-progress-track">
+        <div class="timeline-progress-fill"></div>
+      </div>
+      <div class="hero-bottom-meta">
+        <div class="hero-rate-text">
+          Average annual rate <strong>{{ currency_symbol }}84,000</strong>
+        </div>
+        <div class="hero-legend-group">
+          <div class="hero-legend-item">
+            <span class="legend-dot white"></span>
+            <span>Actual balance</span>
+          </div>
+          <div class="hero-legend-item">
+            <span class="legend-dot green"></span>
+            <span>Total monthly balance</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero Right: Glowing Amber "My Cards" Stack -->
+  <div class="glowing-amber-card">
+    <div>
+      <div class="amber-card-top">
+        <h3>My cards</h3>
+        <button class="pill-add-btn" onclick="window.location.href='{{ url_for('admission') }}'">+ Add new</button>
+      </div>
+
+      <!-- Layered Card Stack Graphic -->
+      <div class="card-stack-container">
+        <!-- Back Tab 1 -->
+        <div class="card-stack-back-tab tab-1">
+          <span>VISA</span>
+          <span>{{ currency_symbol }}4,150.00</span>
+        </div>
+        <!-- Back Tab 2 -->
+        <div class="card-stack-back-tab tab-2">
+          <span>MASTERCARD</span>
+          <span>{{ currency_symbol }}3,140.00</span>
+        </div>
+        <!-- Front Main Card -->
+        <div class="pass-card-graphic">
+          <div class="pass-card-brand">
+            <span>VISA</span>
+            <div class="emv-chip" title="EMV Smart Dining Chip"></div>
+          </div>
+          <div class="pass-card-balance">Balance</div>
+          <div class="pass-card-amount">
+            <span>{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</span>
+            <span class="badge-upward" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">↑ 3.52%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="amber-card-actions">
+      <button class="btn-card-request" onclick="openModal('paymentModal')">
+        <span style="font-size: 15px;">↘</span> Request
+      </button>
+      <button class="btn-card-transfer" onclick="window.location.href='{{ url_for('admission') }}'">
+        <span style="font-size: 15px;">↗</span> Transfer
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================================================================
+     10 CORE SUMMARY KPI CARDS
+     =================================================================== -->
 <div class="stats-grid">
   <!-- 1. Total Admitted Students -->
   <div class="stat-card">
@@ -50,7 +166,7 @@
       <span class="stat-label">Veg Mess Students</span>
       <div class="stat-icon success">🥗</div>
     </div>
-    <div class="stat-value" style="color: var(--veg-color);">{{ veg_students }}</div>
+    <div class="stat-value" style="color: var(--accent-green);">{{ veg_students }}</div>
     <div class="stat-footer">Active pure vegetarian plan</div>
   </div>
 
@@ -60,7 +176,7 @@
       <span class="stat-label">Non-Veg Mess Students</span>
       <div class="stat-icon danger">🍗</div>
     </div>
-    <div class="stat-value" style="color: var(--nonveg-color);">{{ nonveg_students }}</div>
+    <div class="stat-value" style="color: var(--accent-red);">{{ nonveg_students }}</div>
     <div class="stat-footer">Active non-vegetarian plan</div>
   </div>
 
@@ -70,7 +186,7 @@
       <span class="stat-label">Fees Collected</span>
       <div class="stat-icon success">💰</div>
     </div>
-    <div class="stat-value" style="color: #059669;">{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</div>
+    <div class="stat-value" style="color: var(--accent-green);">{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</div>
     <div class="stat-footer">Total payments deposited</div>
   </div>
 
@@ -80,7 +196,7 @@
       <span class="stat-label">Pending Payments</span>
       <div class="stat-icon warning">⏳</div>
     </div>
-    <div class="stat-value" style="color: #d97706;">{{ currency_symbol }}{{ "%.2f"|format(pending_payments) }}</div>
+    <div class="stat-value" style="color: var(--accent-amber);">{{ currency_symbol }}{{ "%.2f"|format(pending_payments) }}</div>
     <div class="stat-footer">Outstanding balance to collect</div>
   </div>
 
@@ -90,7 +206,7 @@
       <span class="stat-label">Absent Today</span>
       <div class="stat-icon danger">❌</div>
     </div>
-    <div class="stat-value" style="color: var(--danger);">{{ absent_today }}</div>
+    <div class="stat-value" style="color: var(--accent-red);">{{ absent_today }}</div>
     <div class="stat-footer">{{ present_today }} marked present today</div>
   </div>
 
@@ -100,7 +216,7 @@
       <span class="stat-label">3+ Consecutive Absences</span>
       <div class="stat-icon warning">⚠️</div>
     </div>
-    <div class="stat-value" style="color: #d97706;">{{ eligible_absences|length }}</div>
+    <div class="stat-value" style="color: var(--accent-amber);">{{ eligible_absences|length }}</div>
     <div class="stat-footer">Eligible for absence adjustment</div>
   </div>
 
@@ -110,7 +226,7 @@
       <span class="stat-label">Expiring in &le; 3 Days</span>
       <div class="stat-icon warning">🔔</div>
     </div>
-    <div class="stat-value" style="color: #b45309;">{{ expiring_soon|length }}</div>
+    <div class="stat-value" style="color: var(--accent-amber);">{{ expiring_soon|length }}</div>
     <div class="stat-footer">Requires immediate renewal</div>
   </div>
 
@@ -120,51 +236,122 @@
       <span class="stat-label">Expired Students</span>
       <div class="stat-icon danger">🚫</div>
     </div>
-    <div class="stat-value" style="color: #dc2626;">{{ expired_students }}</div>
+    <div class="stat-value" style="color: var(--accent-red);">{{ expired_students }}</div>
     <div class="stat-footer">Past dining expiry date</div>
   </div>
 </div>
 
-<!-- Charts Section -->
-<div class="dashboard-grid">
-  <!-- Chart 1: 7-Day Attendance Trend -->
-  <div class="panel">
-    <div class="panel-header">
-      <h3 class="panel-title">📈 7-Day Attendance Trend (Present vs Absent)</h3>
-      <a href="{{ url_for('attendance') }}" class="btn btn-outline btn-sm">Full Attendance</a>
-    </div>
-    <div class="panel-body">
-      <div style="height: 280px; position: relative;">
-        <canvas id="attendanceChart"></canvas>
+<!-- ===================================================================
+     DASHBOARD BOTTOM THREE-COLUMN SECTION (EXACT IMAGE REPLICA)
+     =================================================================== -->
+<div class="dashboard-bottom-layout">
+  
+  <!-- 1. Left Card: Amber Promo Card -->
+  <div class="glowing-amber-promo-card">
+    <div>
+      <h3 class="promo-title">Trusted by Thousands<br>Join Us Today!</h3>
+      <p class="promo-subtext">Secure, reliable, and trusted by customers worldwide</p>
+      
+      <!-- Avatar Cluster from Image -->
+      <div class="avatar-pile">
+        <div class="avatar-pile-item" style="background: #3b82f6;">👩</div>
+        <div class="avatar-pile-item" style="background: #f59e0b;">👨</div>
+        <div class="avatar-pile-item" style="background: #10b981;">🧑</div>
+        <div class="avatar-pile-item avatar-pile-plus">+</div>
       </div>
+    </div>
+
+    <a href="{{ url_for('admission') }}" class="btn-promo-request">Request</a>
+  </div>
+
+  <!-- 2. Middle Card: Investments / Bar Chart with Neon Emerald Highlight -->
+  <div class="investments-card">
+    <div class="investments-header">
+      <div class="investments-title-wrap">
+        <h4>Investments</h4>
+        <div class="investments-amount">
+          <span>{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected if total_fees_collected > 0 else 3200) }}</span>
+          <span class="badge-upward">↑ 1.52%</span>
+        </div>
+      </div>
+      <div class="investments-actions">
+        <button class="pill-dropdown-btn">Sort ↑↓</button>
+        <button class="pill-dropdown-btn">Month ∨</button>
+      </div>
+    </div>
+
+    <!-- Bar Chart Canvas -->
+    <div style="height: 180px; position: relative;">
+      <canvas id="investmentsBarChart"></canvas>
     </div>
   </div>
 
-  <!-- Chart 2: Plan Breakdown -->
-  <div class="panel">
-    <div class="panel-header">
-      <h3 class="panel-title">🥗 Mess Plan Distribution</h3>
-      <span class="badge badge-active">{{ active_students }} Active</span>
+  <!-- 3. Right Card: Recent Transactions List -->
+  <div class="recent-transactions-card">
+    <div class="transactions-header">
+      <h4>Recent Transactions</h4>
+      <a href="{{ url_for('payments') }}" class="view-all-link">View All</a>
     </div>
-    <div class="panel-body">
-      <div style="height: 230px; position: relative; display: flex; align-items: center; justify-content: center;">
-        <canvas id="planChart"></canvas>
-      </div>
-      <div style="display: flex; justify-content: space-around; margin-top: 16px; font-size: 13px;">
-        <div style="text-align: center;">
-          <div style="font-weight: 700; color: var(--veg-color);">Veg: {{ veg_students }}</div>
-          <div style="font-size: 11px; color: var(--text-muted);">{{ "%.1f"|format((veg_students / (active_students or 1)) * 100) }}%</div>
+
+    <div class="transaction-list">
+      {% if recent_payments %}
+        {% for p in recent_payments %}
+          <div class="transaction-item">
+            <div class="tx-left">
+              <div class="tx-avatar photo-avatar">
+                {{ p.full_name[:1]|upper }}
+              </div>
+              <div class="tx-meta">
+                <span class="tx-name">{{ p.full_name }}</span>
+                <span class="tx-time">{{ p.payment_date }} &bull; {{ p.payment_method }}</span>
+              </div>
+            </div>
+            <div class="tx-amount positive">+{{ currency_symbol }}{{ "%.2f"|format(p.amount) }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <!-- Default sample transactions matching image layout -->
+        <div class="transaction-item">
+          <div class="tx-left">
+            <div class="tx-avatar photo-avatar">LB</div>
+            <div class="tx-meta">
+              <span class="tx-name">Lucas Bennett</span>
+              <span class="tx-time">20 Jan, 02:00 PM</span>
+            </div>
+          </div>
+          <div class="tx-amount positive">+{{ currency_symbol }}25.00</div>
         </div>
-        <div style="text-align: center;">
-          <div style="font-weight: 700; color: var(--nonveg-color);">Non-Veg: {{ nonveg_students }}</div>
-          <div style="font-size: 11px; color: var(--text-muted);">{{ "%.1f"|format((nonveg_students / (active_students or 1)) * 100) }}%</div>
+
+        <div class="transaction-item">
+          <div class="tx-left">
+            <div class="tx-avatar" style="background: rgba(255, 255, 255, 0.08);">📁</div>
+            <div class="tx-meta">
+              <span class="tx-name">Google Drive</span>
+              <span class="tx-time">20 Jan, 02:00 PM</span>
+            </div>
+          </div>
+          <div class="tx-amount negative">-{{ currency_symbol }}5.00</div>
         </div>
-      </div>
+
+        <div class="transaction-item">
+          <div class="tx-left">
+            <div class="tx-avatar" style="background: rgba(255, 255, 255, 0.08);">👟</div>
+            <div class="tx-meta">
+              <span class="tx-name">Nike Store</span>
+              <span class="tx-time">19 Jan, 02:00 PM</span>
+            </div>
+          </div>
+          <div class="tx-amount negative">-{{ currency_symbol }}55.00</div>
+        </div>
+      {% endif %}
     </div>
   </div>
+
 </div>
 
-<!-- Actionable Tables Grid -->
+<!-- ===================================================================
+     ACTIONABLE TABLES GRID (RETENTIONS & CONSECUTIVE ABSENCES)
+     =================================================================== -->
 <div class="dashboard-grid">
   <!-- Table 1: Expiring Within 3 Days -->
   <div class="panel">
@@ -198,7 +385,7 @@
                   </td>
                   <td>{{ s.current_expiry_date }}</td>
                   <td>
-                    <span class="badge badge-warning">
+                    <span class="badge" style="background: var(--accent-amber-bg); color: var(--accent-amber-text);">
                       {{ s.days_left|int }} day(s) left
                     </span>
                   </td>
@@ -211,7 +398,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">
                   ✨ No students are expiring in the next 3 days. All plans active!
                 </td>
               </tr>
@@ -245,15 +432,17 @@
                 <tr>
                   <td>
                     <strong><a href="{{ url_for('student_profile', student_id=adj.student_id) }}">{{ adj.student_name }}</a></strong>
-                    <div style="font-size: 11px; color: var(--text-muted);">{{ adj.student_id }} &bull; {{ adj.mess_type }}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">{{ adj.student_id }} &bull; {{ adj.mess_type }}</div>
                   </td>
                   <td>
-                    <span class="badge badge-warning">{{ adj.consecutive_count }} Consecutive Days</span>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">{{ adj.absent_dates_str }}</div>
+                    <span class="badge" style="background: var(--accent-amber-bg); color: var(--accent-amber-text);">
+                      {{ adj.consecutive_count }} Consecutive Days
+                    </span>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">{{ adj.absent_dates_str }}</div>
                   </td>
                   <td>
-                    <div style="font-weight: 600; color: var(--success);">{{ adj.proposed_expiry_date }}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">(+{{ adj.credited_days }} days credit)</div>
+                    <div style="font-weight: 600; color: var(--accent-green);">{{ adj.proposed_expiry_date }}</div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">(+{{ adj.credited_days }} days credit)</div>
                   </td>
                   <td>
                     <a href="{{ url_for('absent_approvals') }}" class="btn btn-success btn-sm">
@@ -264,7 +453,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">
                   ✨ No active students currently have 3 or more consecutive uncredited absent days.
                 </td>
               </tr>
@@ -279,65 +468,154 @@
 
 {% block scripts %}
 <script>
-  // 1. Chart: 7-Day Attendance Trend
-  const ctxAttendance = document.getElementById('attendanceChart').getContext('2d');
-  const chartDates = {{ chart_dates|safe }};
-  const chartPresents = {{ chart_presents|safe }};
-  const chartAbsents = {{ chart_absents|safe }};
+  // 1. Hero Area Spline Chart (Warm Radiant Amber Theme)
+  const heroCanvas = document.getElementById('heroSplineChart');
+  let heroChartInstance = null;
 
-  new Chart(ctxAttendance, {
-    type: 'bar',
-    data: {
-      labels: chartDates,
-      datasets: [
-        {
-          label: 'Present Students',
-          data: chartPresents,
-          backgroundColor: '#10b981',
-          borderRadius: 6
-        },
-        {
-          label: 'Absent Students',
-          data: chartAbsents,
-          backgroundColor: '#f43f5e',
-          borderRadius: 6
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' }
+  if (heroCanvas) {
+    const ctx = heroCanvas.getContext('2d');
+    
+    // Create subtle warm orange gradient fill
+    const amberGradient = ctx.createLinearGradient(0, 0, 0, 220);
+    amberGradient.addColorStop(0, 'rgba(255, 106, 0, 0.45)');
+    amberGradient.addColorStop(0.6, 'rgba(234, 88, 12, 0.15)');
+    amberGradient.addColorStop(1, 'rgba(255, 106, 0, 0.0)');
+
+    const labels = ['Sep', '', 'Oct', '', 'Nov', '', 'Dec', '', 'Jan', '', 'Feb'];
+    const dataPoints = [4200, 5800, 6200, 7100, 5900, 8300, 9780.90, 8100, 8900, 9200, 10120.50];
+
+    heroChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: dataPoints,
+          borderColor: '#ff6a00',
+          borderWidth: 2.8,
+          backgroundColor: amberGradient,
+          fill: true,
+          tension: 0.42,
+          pointBackgroundColor: function(context) {
+            return context.dataIndex === 6 ? '#ffffff' : 'transparent';
+          },
+          pointBorderColor: function(context) {
+            return context.dataIndex === 6 ? '#ff6a00' : 'transparent';
+          },
+          pointBorderWidth: 3,
+          pointRadius: function(context) {
+            return context.dataIndex === 6 ? 6 : 0;
+          },
+          pointHoverRadius: 7
+        }]
       },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { precision: 0 } }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ' ' + context.parsed.y.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            display: false,
+            grid: { display: false }
+          },
+          y: {
+            position: 'right',
+            grid: {
+              color: 'rgba(255, 255, 255, 0.04)'
+            },
+            ticks: {
+              color: '#6e675f',
+              font: { size: 11 },
+              callback: function(value) {
+                if (value >= 1000) return '$' + (value / 1000) + 'k';
+                return '$' + value;
+              }
+            }
+          }
+        }
       }
-    }
-  });
+    });
+  }
 
-  // 2. Chart: Veg vs Non-Veg
-  const ctxPlan = document.getElementById('planChart').getContext('2d');
-  new Chart(ctxPlan, {
-    type: 'doughnut',
-    data: {
-      labels: ['Pure Veg', 'Non-Veg'],
-      datasets: [{
-        data: [{{ veg_students }}, {{ nonveg_students }}],
-        backgroundColor: ['#10b981', '#f43f5e'],
-        borderWidth: 0,
-        hoverOffset: 4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '70%',
-      plugins: {
-        legend: { display: false }
-      }
+  // Time pill interactive filter
+  function updateHeroRange(days, btn) {
+    document.querySelectorAll('.time-pill-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (heroChartInstance) {
+      // Smoothly animate random variation for demonstration
+      heroChartInstance.data.datasets[0].data = heroChartInstance.data.datasets[0].data.map(v => Math.round(v * (0.92 + Math.random() * 0.16)));
+      heroChartInstance.update();
     }
-  });
+  }
+
+  // 2. Middle Card: Investments Bar Chart with Neon Emerald Highlight
+  const barCanvas = document.getElementById('investmentsBarChart');
+  if (barCanvas) {
+    const ctxBar = barCanvas.getContext('2d');
+    
+    // Bar gradient for standard bars vs emerald highlight for Jan
+    const barGradient = ctxBar.createLinearGradient(0, 0, 0, 180);
+    barGradient.addColorStop(0, '#3a3229');
+    barGradient.addColorStop(1, '#1e1a16');
+
+    const emeraldGradient = ctxBar.createLinearGradient(0, 0, 0, 180);
+    emeraldGradient.addColorStop(0, '#10b981');
+    emeraldGradient.addColorStop(1, '#059669');
+
+    new Chart(ctxBar, {
+      type: 'bar',
+      data: {
+        labels: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'],
+        datasets: [{
+          data: [200, 300, 400, 400, 500, 400],
+          backgroundColor: function(context) {
+            return context.dataIndex === 4 ? emeraldGradient : barGradient;
+          },
+          borderColor: function(context) {
+            return context.dataIndex === 4 ? '#34d399' : 'transparent';
+          },
+          borderWidth: 1,
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return ' $' + context.parsed.y;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: '#78716c',
+              font: { size: 11 }
+            }
+          },
+          y: {
+            display: false,
+            grid: { display: false },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
 </script>
 {% endblock %}

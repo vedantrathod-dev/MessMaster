@@ -302,6 +302,15 @@ def dashboard():
         chart_presents.append(p_count)
         chart_absents.append(a_count)
 
+    # Recent payments for Dashboard Recent Activity / Transactions list
+    recent_payments = conn.execute("""
+        SELECT p.*, s.full_name, s.mess_type 
+        FROM payments p
+        JOIN students s ON p.student_id = s.student_id
+        ORDER BY p.payment_date DESC, p.id DESC
+        LIMIT 4
+    """).fetchall()
+
     conn.close()
 
     return render_template('dashboard.html',
@@ -316,6 +325,7 @@ def dashboard():
         present_today=present_today,
         expiring_soon=expiring_soon,
         eligible_absences=eligible_absences,
+        recent_payments=recent_payments,
         chart_dates=json.dumps(chart_dates),
         chart_presents=json.dumps(chart_presents),
         chart_absents=json.dumps(chart_absents)

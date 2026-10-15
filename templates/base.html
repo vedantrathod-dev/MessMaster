@@ -6,8 +6,16 @@
   <meta name="description" content="Professional College Mess Management System for student admissions, dining plans, attendance, payments, and absence adjustments.">
   <title>{% block title %}{{ mess_name }}{% endblock %} - College Mess Management</title>
   
+  <!-- Theme Init Script (Zero Flash) -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('messmaster_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
+
   <!-- CSS Stylesheet -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.2">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.3">
   
   <!-- Chart.js for interactive analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -19,10 +27,17 @@
     <aside class="sidebar" id="appSidebar">
       <div class="sidebar-header">
         <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1;">
-          <div class="brand-icon">🍽️</div>
+          <div class="brand-emerald-icon" title="MessMaster Campus Dining">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2a4 4 0 0 1 4 4c0 2.2-1.8 4-4 4a4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/>
+              <path d="M2 12a4 4 0 0 1 4-4c2.2 0 4 1.8 4 4a4 4 0 0 1-4 4 4 4 0 0 1-4-4z"/>
+              <path d="M12 22a4 4 0 0 1-4-4c0-2.2 1.8-4 4-4a4 4 0 0 1 4 4 4 4 0 0 1-4 4z"/>
+              <path d="M22 12a4 4 0 0 1-4 4c-2.2 0-4-1.8-4-4a4 4 0 0 1 4-4 4 4 0 0 1 4 4z"/>
+            </svg>
+          </div>
           <div class="brand-title">
             <span class="brand-name">MessMaster</span>
-            <span class="brand-sub">Campus Dining Ops</span>
+            <span class="brand-sub">Campus Dining</span>
           </div>
         </div>
         <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Navigation">&times;</button>
@@ -135,26 +150,65 @@
     <!-- Main Content Wrapper -->
     <div class="main-wrapper">
       
-      <!-- Topbar Header -->
+      <!-- Topbar Header (Exact Aesthetic Replica) -->
       <header class="topbar">
         <div class="topbar-left">
           <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">☰</button>
-          <div class="page-breadcrumb">
+          
+          <!-- Exact Rounded Search Pill from Image -->
+          <div class="topbar-search-pill" id="topbarSearchContainer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.65; flex-shrink: 0;">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="globalSearchInput" placeholder="Search..." autocomplete="off">
+            <span class="kbd-shortcut">⌘ + Space</span>
+          </div>
+
+          <div class="page-breadcrumb hide-on-mobile">
             <h1 class="page-title">{% block page_title %}College Mess Management{% endblock %}</h1>
-            <span class="topbar-subtext">{{ mess_name }} &bull; {{ college_name }}</span>
           </div>
         </div>
 
         <div class="topbar-right">
-          <div class="date-indicator">
-            <span>🗓️</span>
-            <span>{{ today_date }}</span>
+          <!-- Circular Refresh Button from Image -->
+          <button class="topbar-circle-btn" id="refreshBtn" title="Refresh Page" onclick="window.location.reload();">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l6.23-1.19"/>
+            </svg>
+          </button>
+
+          <!-- Circular Bell Notification with Glowing Dot from Image -->
+          <div class="topbar-circle-btn" id="notificationBtn" title="Pending Approvals & Renewals" onclick="window.location.href='{{ url_for('absent_approvals') }}';">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            {% if badge_expired_count > 0 or badge_pending_count > 0 %}
+            <span class="notification-dot"></span>
+            {% endif %}
           </div>
-          <a href="{{ url_for('admission') }}" class="btn btn-primary btn-sm btn-quick-admit" id="btn-quick-admission">
-            <span>➕</span>
-            <span class="btn-text">New Admission</span>
-          </a>
-          <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm" title="Sign Out">
+
+          <!-- Circular Dark / Light Mode Switcher from Image -->
+          <button class="topbar-circle-btn" id="themeToggleBtn" title="Toggle Dark / Light Mode" aria-label="Toggle Theme">
+            <span id="themeToggleIcon">🌙</span>
+          </button>
+
+          <!-- User Profile Chip from Image -->
+          <div class="user-profile-chip" title="{{ current_user.full_name if current_user else 'Ethan Reynolds' }}" onclick="window.location.href='{{ url_for('settings') }}';">
+            <div class="user-chip-avatar">
+              {{ (current_user.full_name[:2] if current_user and current_user.full_name else 'ER')|upper }}
+            </div>
+            <div class="user-chip-meta hide-on-mobile">
+              <span class="user-chip-name">{{ current_user.full_name if current_user else 'Ethan Reynolds' }}</span>
+              <span class="user-chip-handle">@{{ (current_user.username if current_user else 'ethan_reynolds')|lower }}</span>
+            </div>
+            <svg class="user-chip-chevron hide-on-mobile" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+
+          <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm hide-on-mobile" title="Sign Out">
             <span>🚪</span>
             <span class="btn-text-logout">Logout</span>
           </a>
