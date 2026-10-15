@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Registration &bull; MessMaster Campus Dining</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=1.0.4">
+  <style>
+    .register-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 15%, rgba(234, 88, 12, 0.16) 0%, #0d0c0a 75%);
+      background-color: #0d0c0a;
+      padding: 36px 16px;
+    }
+    .register-card {
+      background: #181613;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255, 255, 255, 0.05);
+      width: 100%;
+      max-width: 640px;
+      padding: 38px 34px;
+      position: relative;
+    }
+    .register-header {
+      text-align: center;
+      margin-bottom: 26px;
+    }
+    .register-logo {
+      width: 58px;
+      height: 58px;
+      border-radius: 16px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #10b981;
+      margin: 0 auto 14px;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+    }
+    .register-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+    }
+    .register-sub {
+      font-size: 13px;
+      color: #a8a299;
+      margin-top: 4px;
+    }
+    .plan-selector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .plan-radio-card {
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      background: #201d19;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .plan-radio-card:hover {
+      border-color: rgba(255, 106, 0, 0.5);
+      background: #26221d;
+    }
+    .plan-radio-card.selected {
+      border-color: var(--accent-orange);
+      background: rgba(255, 106, 0, 0.08);
+      box-shadow: 0 0 16px rgba(255, 106, 0, 0.2);
+    }
+    .plan-radio-card input {
+      display: none;
+    }
+    .plan-name {
+      font-weight: 700;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-primary);
+    }
+    .plan-price {
+      font-size: 13px;
+      color: var(--accent-orange);
+      font-weight: 600;
+    }
+    .calc-box {
+      background: var(--bg-card-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      margin: 16px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .calc-title {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .calc-amount {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent-orange);
+    }
+    .section-divider {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      margin: 24px 0 20px;
+      position: relative;
+    }
+    .section-divider span {
+      position: absolute;
+      top: -10px;
+      left: 18px;
+      background: #181613;
+      padding: 0 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-orange);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-container">
+    <div class="register-card">
+      <div class="register-header">
+        <div class="register-logo">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2a4 4 0 0 1 4 4c0 2.2-1.8 4-4 4a4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/>
+            <path d="M2 12a4 4 0 0 1 4-4c2.2 0 4 1.8 4 4a4 4 0 0 1-4 4 4 4 0 0 1-4-4z"/>
+            <path d="M12 22a4 4 0 0 1-4-4c0-2.2 1.8-4 4-4a4 4 0 0 1 4 4 4 4 0 0 1-4 4z"/>
+            <path d="M22 12a4 4 0 0 1-4 4c-2.2 0-4-1.8-4-4a4 4 0 0 1 4-4 4 4 0 0 1 4 4z"/>
+          </svg>
+        </div>
+        <h1 class="register-title">Student Registration</h1>
+        <p class="register-sub">Create your mess account, select your meal plan & get instant dining access</p>
+      </div>
+
+      <!-- Flash alerts -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="margin-bottom: 18px;">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form action="{{ url_for('register') }}" method="POST" id="registerForm">
+        
+        <!-- SECTION 1: Personal Details -->
+        <div class="section-divider"><span>1. Personal Information</span></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="full_name">Full Name <span class="required">*</span></label>
+            <input type="text" class="form-control" name="full_name" id="full_name" placeholder="e.g. Aryan Sharma" required autofocus>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="mobile">Mobile Number (10 digits) <span class="required">*</span></label>
+            <input type="tel" class="form-control" name="mobile" id="mobile" pattern="[0-9]{10}" placeholder="9876543210" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="college_name">College / Institute Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="college_name" id="college_name" placeholder="e.g. College of Engineering" required>
+        </div>
+
+        <!-- SECTION 2: Account Login Credentials -->
+        <div class="section-divider"><span>2. Account Login</span></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="username">Username / ID <span class="required">*</span></label>
+            <input type="text" class="form-control" name="username" id="username" placeholder="Choose a username" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="start_date">Mess Start Date <span class="required">*</span></label>
+            <input type="date" class="form-control" name="start_date" id="start_date" value="{{ today_date }}" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="password">Password <span class="required">*</span></label>
+            <input type="password" class="form-control" name="password" id="password" placeholder="At least 6 characters" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirm_password">Confirm Password <span class="required">*</span></label>
+            <input type="password" class="form-control" name="confirm_password" id="confirm_password" placeholder="Re-type password" required>
+          </div>
+        </div>
+
+        <!-- SECTION 3: Meal Plan Selection (User Requirement) -->
+        <div class="section-divider"><span>3. Choose Your Meal Plan</span></div>
+
+        <label class="form-label">Select Mess Type <span class="required">*</span></label>
+        <div class="plan-selector-grid">
+          <label class="plan-radio-card selected" id="cardVeg" onclick="selectMessType('Veg')">
+            <input type="radio" name="mess_type" value="Veg" checked>
+            <div class="plan-name">🥗 Pure Veg Mess</div>
+            <div class="plan-price">{{ currency_symbol }}{{ "%.0f"|format(default_veg) }} / 30 days</div>
+            <div style="font-size: 11px; color: var(--text-tertiary);">Unlimited nutritious vegetarian dining</div>
+          </label>
+
+          <label class="plan-radio-card" id="cardNonVeg" onclick="selectMessType('Non-Veg')">
+            <input type="radio" name="mess_type" value="Non-Veg">
+            <div class="plan-name">🍗 Non-Veg Mess</div>
+            <div class="plan-price">{{ currency_symbol }}{{ "%.0f"|format(default_nonveg) }} / 30 days</div>
+            <div style="font-size: 11px; color: var(--text-tertiary);">Vegetarian daily meals + Chicken/Egg specials</div>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="meal_preference">Meal Sessions <span class="required">*</span></label>
+            <select class="form-control form-select" name="meal_preference" id="meal_preference" onchange="calculateFee()" required>
+              <option value="Both" selected>🌞 Lunch & 🌙 Dinner (Full Plan)</option>
+              <option value="Lunch">🌞 Lunch Only (Single Session)</option>
+              <option value="Dinner">🌙 Dinner Only (Single Session)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="plan_duration">Plan Duration <span class="required">*</span></label>
+            <select class="form-control form-select" name="plan_duration" id="plan_duration" onchange="calculateFee()" required>
+              <option value="30" selected>30 Days (1 Month)</option>
+              <option value="60">60 Days (2 Months)</option>
+              <option value="90">90 Days (Quarterly Semester)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dynamic Calculation Card -->
+        <div class="calc-box">
+          <div>
+            <div class="calc-title">Total Mess Plan Fee</div>
+            <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;" id="feeBreakdownText">
+              30 Days Pure Veg Plan (Lunch & Dinner)
+            </div>
+          </div>
+          <div class="calc-amount">{{ currency_symbol }}<span id="calculatedFeeDisplay">{{ "%.2f"|format(default_veg) }}</span></div>
+          <input type="hidden" name="total_fee" id="hiddenTotalFee" value="{{ default_veg }}">
+        </div>
+
+        <!-- SECTION 4: Initial Deposit / Payment -->
+        <div class="section-divider"><span>4. Payment & Deposit</span></div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="amount_paid">Amount to Pay Now ({{ currency_symbol }})</label>
+            <input type="number" step="0.01" min="0" class="form-control" name="amount_paid" id="amount_paid" value="{{ default_veg }}">
+            <div class="form-helper">Pay full, partial, or 0 to clear balance at the mess counter.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="payment_method">Payment Method</label>
+            <select class="form-control form-select" name="payment_method" id="payment_method">
+              <option value="UPI" selected>UPI / QR Code</option>
+              <option value="Cash">Cash at Counter</option>
+              <option value="Credit/Debit Card">Card</option>
+              <option value="Net Banking">Net Banking</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 13px; font-size: 15px;">
+            <span>🚀</span> Create Account & Activate Mess Plan
+          </button>
+        </div>
+
+        <div style="text-align: center; margin-top: 18px; font-size: 13px; color: var(--text-secondary);">
+          Already have an account? <a href="{{ url_for('login') }}" style="color: var(--accent-orange); font-weight: 700; text-decoration: none;">Sign In Here</a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const defaultVegRate = {{ default_veg }};
+    const defaultNonVegRate = {{ default_nonveg }};
+    const currency = "{{ currency_symbol }}";
+
+    let selectedMess = "Veg";
+
+    function selectMessType(type) {
+      selectedMess = type;
+      document.querySelectorAll('input[name="mess_type"]').forEach(r => {
+        r.checked = (r.value === type);
+      });
+      document.getElementById('cardVeg').classList.toggle('selected', type === 'Veg');
+      document.getElementById('cardNonVeg').classList.toggle('selected', type === 'Non-Veg');
+      calculateFee();
+    }
+
+    function calculateFee() {
+      const duration = parseInt(document.getElementById('plan_duration').value) || 30;
+      const mealPref = document.getElementById('meal_preference').value;
+      const baseMonthly = (selectedMess === 'Veg') ? defaultVegRate : defaultNonVegRate;
+
+      let total = (baseMonthly / 30.0) * duration;
+      if (mealPref === 'Lunch' || mealPref === 'Dinner') {
+        total = total * 0.6; // single session discount
+      }
+
+      const totalFormatted = total.toFixed(2);
+      document.getElementById('calculatedFeeDisplay').textContent = totalFormatted;
+      document.getElementById('hiddenTotalFee').value = totalFormatted;
+      
+      const prefText = mealPref === 'Both' ? 'Lunch & Dinner' : (mealPref + ' Only');
+      document.getElementById('feeBreakdownText').textContent = `${duration} Days ${selectedMess} Plan (${prefText})`;
+
+      const amountPaidInput = document.getElementById('amount_paid');
+      amountPaidInput.value = totalFormatted;
+      amountPaidInput.max = totalFormatted;
+    }
+
+    // Auto fill username from mobile if left blank
+    document.getElementById('mobile').addEventListener('input', function(e) {
+      const usernameInput = document.getElementById('username');
+      if (!usernameInput.value || usernameInput.value.startsWith('9')) {
+        usernameInput.value = e.target.value;
+      }
+    });
+  </script>
+</body>
+</html>

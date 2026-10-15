@@ -196,21 +196,31 @@
           <button type="submit" class="btn btn-primary" style="flex: 1; padding: 11px;">
             <span>🔐</span> Sign In
           </button>
-          <button type="button" class="btn btn-outline" id="btnFirebaseRegister" title="Register new admin with Firebase" style="padding: 11px 14px;">
-            <span>➕</span> Register
-          </button>
+          <a href="{{ url_for('register') }}" class="btn btn-outline" style="padding: 11px 14px; text-decoration: none;">
+            <span>➕</span> Student Register
+          </a>
+        </div>
+
+        <div style="text-align: center; margin-top: 14px; font-size: 12.5px; color: #a8a299;">
+          New student? <a href="{{ url_for('register') }}" style="color: var(--accent-orange); font-weight: 700; text-decoration: none;">Create Account & Choose Meal Plan &rarr;</a>
         </div>
       </form>
 
       <div class="demo-credentials">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Default Demo Credentials:</span>
-          <button type="button" id="btnQuickDemo" style="background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 11px; text-decoration: underline;">
-            Fill Demo
-          </button>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span style="font-weight: 700; color: #fcfbf9;">Quick Demo Logins:</span>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" onclick="fillCreds('admin', 'admin123')" style="background: none; border: none; color: var(--accent-orange); font-weight: 700; cursor: pointer; font-size: 11px; text-decoration: underline;">
+              Admin
+            </button>
+            <span style="color: #78716c;">&bull;</span>
+            <button type="button" onclick="fillCreds('student1', 'password123')" style="background: none; border: none; color: var(--accent-green); font-weight: 700; cursor: pointer; font-size: 11px; text-decoration: underline;">
+              Student
+            </button>
+          </div>
         </div>
-        <div style="margin-top: 4px;">
-          User: <code>admin</code> &nbsp;|&nbsp; Pass: <code>admin123</code>
+        <div>
+          Admin: <code>admin</code> / <code>admin123</code> &bull; Student: <code>student1</code> / <code>password123</code>
         </div>
       </div>
     </div>
@@ -321,11 +331,11 @@
     }
 
     // 3. Quick Demo Fill
-    document.getElementById('btnQuickDemo').addEventListener('click', () => {
-      document.getElementById('username').value = 'admin';
-      document.getElementById('password').value = 'admin123';
-      statusBox.style.display = 'none';
-    });
+    window.fillCreds = function(user, pass) {
+      document.getElementById('username').value = user;
+      document.getElementById('password').value = pass;
+      if (statusBox) statusBox.style.display = 'none';
+    };
   </script>
 </body>
 </html>

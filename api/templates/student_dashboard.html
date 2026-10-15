@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}My Student Dining Portal - {{ student.full_name }}{% endblock %}
+{% block page_title %}Student Dining Portal & Attendance Pass{% endblock %}
+
+{% block content %}
+<!-- Student Profile Banner Card -->
+<div class="panel" style="margin-bottom: 24px;">
+  <div class="panel-body">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+      
+      <div style="display: flex; gap: 18px; align-items: center; min-width: 0;">
+        <div style="width: 64px; height: 64px; border-radius: var(--radius-lg); background: linear-gradient(135deg, var(--accent-amber), var(--accent-orange)); color: #0f1115; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; flex-shrink: 0;">
+          {{ student.full_name[0] }}
+        </div>
+        <div style="min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <h2 style="font-size: 22px; font-weight: 800; color: var(--text-primary); margin: 0;">{{ student.full_name }}</h2>
+            <span class="badge {% if student.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+              {% if student.mess_type == 'Veg' %}🥗 Pure Veg Mess{% else %}🍗 Non-Veg Mess{% endif %}
+            </span>
+            {% if student.status == 'Active' %}
+              <span class="badge badge-active">🟢 Active Dining</span>
+            {% elif student.status == 'Expired' %}
+              <span class="badge badge-expired">🔴 Plan Expired</span>
+            {% else %}
+              <span class="badge badge-secondary">⚪ Deactivated</span>
+            {% endif %}
+          </div>
+          <div style="font-size: 13.5px; color: var(--text-muted); margin-top: 6px;">
+            <strong>Student ID:</strong> <span style="color: var(--accent-orange); font-weight: 700;">{{ student.student_id }}</span> &bull;
+            <strong>Mobile:</strong> {{ student.mobile }} &bull;
+            <strong>College:</strong> {{ student.college_name }} &bull;
+            <strong>Meal Sessions:</strong> {{ student.meal_preference or 'Lunch & Dinner' }}
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-outline btn-sm" onclick="printPass()">
+          🖨️ Print QR Passes
+        </button>
+        {% if balance > 0 %}
+          <button class="btn btn-success btn-sm" onclick="populatePaymentModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ balance }}')">
+            💳 Pay Dues ({{ currency_symbol }}{{ "%.2f"|format(balance) }})
+          </button>
+        {% endif %}
+        <button class="btn btn-primary btn-sm" onclick="populateRenewModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ student.mess_type }}')">
+          🔄 Renew Plan
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================
+     1. ATTENDANCE QR CODES SECTION (LUNCH & DINNER)
+     =================================================================== -->
+<div class="panel" style="margin-bottom: 24px; border: 1px solid rgba(255, 106, 0, 0.25); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);">
+  <div class="panel-header" style="background: linear-gradient(90deg, rgba(255, 106, 0, 0.08) 0%, transparent 100%);">
+    <div>
+      <h3 class="panel-title" style="display: flex; align-items: center; gap: 8px;">
+        <span>🎫</span> Attendance Dining Passes (Lunch & Dinner QR Codes)
+      </h3>
+      <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+        Present your unique meal QR code at the dining hall counter scanner for automatic meal verification.
+      </div>
+    </div>
+    <span class="badge badge-primary">Daily Live Pass</span>
+  </div>
+
+  <div class="panel-body">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px;">
+      
+      <!-- LUNCH QR PASS CARD -->
+      <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 22px; text-align: center; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #f59e0b, #ea580c);"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <span>🌞</span> Lunch Pass
+          </div>
+          <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);">
+            12:00 PM &ndash; 02:30 PM
+          </span>
+        </div>
+
+        <!-- Lunch QR Code Frame -->
+        <div style="background: #ffffff; padding: 14px; border-radius: var(--radius-md); display: inline-block; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data={{ qr_lunch_data|urlencode }}&margin=4" 
+               alt="Lunch Attendance QR Code" 
+               style="width: 170px; height: 170px; display: block; border-radius: 4px;"
+               loading="lazy">
+        </div>
+
+        <div style="font-size: 11.5px; font-family: monospace; color: var(--text-muted); margin-bottom: 12px;">
+          PASS: LUNCH-{{ student.student_id }}-{{ today_date }}
+        </div>
+
+        <!-- Lunch Status & Check-in Button -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% if today_lunch and today_lunch.status == 'Present' %}
+            <div class="badge badge-success" style="padding: 8px; font-size: 13px; justify-content: center;">
+              ✅ Checked In for Lunch Today
+            </div>
+          {% else %}
+            <div class="badge badge-warning" style="padding: 6px; font-size: 12px; justify-content: center;">
+              ⏳ Awaiting Lunch Check-in
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="selfCheckIn('Lunch')" style="width: 100%;">
+              📱 Tap to Verify Lunch Check-in
+            </button>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- DINNER QR PASS CARD -->
+      <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 22px; text-align: center; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #6366f1, #3b82f6);"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <div style="font-size: 15px; font-weight: 800; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <span>🌙</span> Dinner Pass
+          </div>
+          <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8;">
+            07:30 PM &ndash; 10:00 PM
+          </span>
+        </div>
+
+        <!-- Dinner QR Code Frame -->
+        <div style="background: #ffffff; padding: 14px; border-radius: var(--radius-md); display: inline-block; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data={{ qr_dinner_data|urlencode }}&margin=4" 
+               alt="Dinner Attendance QR Code" 
+               style="width: 170px; height: 170px; display: block; border-radius: 4px;"
+               loading="lazy">
+        </div>
+
+        <div style="font-size: 11.5px; font-family: monospace; color: var(--text-muted); margin-bottom: 12px;">
+          PASS: DINNER-{{ student.student_id }}-{{ today_date }}
+        </div>
+
+        <!-- Dinner Status & Check-in Button -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          {% if today_dinner and today_dinner.status == 'Present' %}
+            <div class="badge badge-success" style="padding: 8px; font-size: 13px; justify-content: center;">
+              ✅ Checked In for Dinner Today
+            </div>
+          {% else %}
+            <div class="badge badge-warning" style="padding: 6px; font-size: 12px; justify-content: center;">
+              ⏳ Awaiting Dinner Check-in
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="selfCheckIn('Dinner')" style="width: 100%;">
+              📱 Tap to Verify Dinner Check-in
+            </button>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===================================================================
+     2. REMAINING DAYS & FINANCIAL STATUS CARDS (PAID VS REMAINING)
+     =================================================================== -->
+<div class="stats-grid" style="margin-bottom: 24px;">
+  
+  <!-- DAYS REMAINING METER -->
+  <div class="stat-card" style="border-left: 3px solid var(--accent-orange);">
+    <div class="stat-header">
+      <span class="stat-label">Days Remaining in Mess</span>
+      <div class="stat-icon {% if current_plan and current_plan.remaining_days < 0 %}danger{% elif current_plan and current_plan.remaining_days <= 3 %}warning{% else %}primary{% endif %}">
+        ⏳
+      </div>
+    </div>
+    <div class="stat-value" style="color: {% if current_plan and current_plan.remaining_days < 0 %}var(--accent-red){% elif current_plan and current_plan.remaining_days <= 3 %}var(--accent-amber){% else %}var(--accent-orange){% endif %};">
+      {% if current_plan %}
+        {% if current_plan.remaining_days < 0 %}
+          Expired
+        {% else %}
+          {{ current_plan.remaining_days|int }} Days Left
+        {% endif %}
+      {% else %}
+        No Active Plan
+      {% endif %}
+    </div>
+    <div class="stat-footer">
+      Expiry Date: <strong>{{ current_plan.current_expiry_date if current_plan else 'N/A' }}</strong>
+      {% if current_plan and current_plan.total_extension_days > 0 %}
+        <span style="color: var(--accent-green);"> (+{{ current_plan.total_extension_days }}d extension credited)</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- HOW MUCH MONEY PAID -->
+  <div class="stat-card" style="border-left: 3px solid var(--accent-green);">
+    <div class="stat-header">
+      <span class="stat-label">Total Fee Paid</span>
+      <div class="stat-icon success">💳</div>
+    </div>
+    <div class="stat-value" style="color: var(--accent-green);">
+      {{ currency_symbol }}{{ "%.2f"|format(total_paid) }}
+    </div>
+    <div class="stat-footer">
+      Total Plan Cost: {{ currency_symbol }}{{ "%.2f"|format(total_fees) }}
+    </div>
+  </div>
+
+  <!-- HOW MUCH MONEY REMAINING -->
+  <div class="stat-card" style="border-left: 3px solid {% if balance > 0 %}var(--accent-amber){% else %}var(--accent-green){% endif %};">
+    <div class="stat-header">
+      <span class="stat-label">Remaining Dues Balance</span>
+      <div class="stat-icon {% if balance > 0 %}warning{% else %}success{% endif %}">💰</div>
+    </div>
+    <div class="stat-value" style="color: {% if balance > 0 %}var(--accent-amber){% else %}var(--accent-green){% endif %};">
+      {% if balance > 0 %}
+        {{ currency_symbol }}{{ "%.2f"|format(balance) }}
+      {% else %}
+        Paid in Full
+      {% endif %}
+    </div>
+    <div class="stat-footer">
+      {% if balance > 0 %}
+        <span style="color: var(--accent-amber);">Pending installment to clear</span>
+      {% else %}
+        <span style="color: var(--accent-green);">All dining fees settled!</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ATTENDANCE RATE -->
+  <div class="stat-card" style="border-left: 3px solid #38bdf8;">
+    <div class="stat-header">
+      <span class="stat-label">Dining Attendance Rate</span>
+      <div class="stat-icon info">📊</div>
+    </div>
+    <div class="stat-value">
+      {% if att_stats.total_days and att_stats.total_days > 0 %}
+        {{ "%.1f"|format((att_stats.present_days / att_stats.total_days) * 100) }}%
+      {% else %}
+        100%
+      {% endif %}
+    </div>
+    <div class="stat-footer">
+      {{ att_stats.present_days or 0 }} Days Present &bull; {{ att_stats.absent_days or 0 }} Days Absent
+    </div>
+  </div>
+
+</div>
+
+<!-- ===================================================================
+     3. PAYMENTS & ATTENDANCE LOGS TWO-COLUMN GRID
+     =================================================================== -->
+<div class="dashboard-grid">
+  
+  <!-- Left Column: Payment Receipts History -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">🧾 Payment Receipts & Dues History</h3>
+      {% if balance > 0 %}
+        <button class="btn btn-success btn-sm" onclick="populatePaymentModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ balance }}')">
+          + Add Payment
+        </button>
+      {% endif %}
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Receipt No</th>
+              <th>Date</th>
+              <th>Amount Paid</th>
+              <th>Method</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if payments %}
+              {% for p in payments %}
+                <tr>
+                  <td><strong>{{ p.receipt_no }}</strong></td>
+                  <td>{{ p.payment_date }}</td>
+                  <td style="font-weight: 700; color: var(--accent-green);">
+                    {{ currency_symbol }}{{ "%.2f"|format(p.amount) }}
+                  </td>
+                  <td><span class="badge badge-secondary">{{ p.payment_method }}</span></td>
+                  <td>
+                    <a href="{{ url_for('view_receipt', receipt_no=p.receipt_no) }}" class="btn btn-outline btn-sm" target="_blank">
+                      🖨️ Receipt
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  No payment receipts recorded yet.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Recent Dining Attendance -->
+  <div class="panel">
+    <div class="panel-header">
+      <h3 class="panel-title">📅 Meal Attendance History (Last 30 Days)</h3>
+      <span class="badge badge-secondary">Logged Days</span>
+    </div>
+    <div class="panel-body" style="padding: 0;">
+      <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Session</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if recent_attendance %}
+              {% for a in recent_attendance %}
+                <tr>
+                  <td>{{ a.date }}</td>
+                  <td><span class="badge badge-secondary">{{ a.meal_session or 'All' }}</span></td>
+                  <td>
+                    {% if a.status == 'Present' %}
+                      <span class="badge badge-active">Present</span>
+                    {% else %}
+                      <span class="badge badge-expired">Absent</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="3" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  No attendance logged yet.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function printPass() {
+    window.print();
+  }
+
+  async function selfCheckIn(mealSession) {
+    try {
+      const resp = await fetch('{{ url_for("api_qr_checkin") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          student_id: '{{ student.student_id }}',
+          meal_session: mealSession
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        alert(data.message);
+        window.location.reload();
+      } else {
+        alert('Check-in failed: ' + (data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Error verifying QR check-in. Please try again.');
+    }
+  }
+</script>
+{% endblock %}

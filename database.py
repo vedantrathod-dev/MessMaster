@@ -53,9 +53,26 @@ def init_db(seed_sample=False):
             password_hash TEXT NOT NULL,
             full_name TEXT NOT NULL,
             role TEXT DEFAULT 'admin',
+            student_id TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     """)
+
+    # Dynamic migrations for existing databases
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN student_id TEXT;")
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE students ADD COLUMN meal_preference TEXT DEFAULT 'Both';")
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE attendance ADD COLUMN meal_session TEXT DEFAULT 'All';")
+    except Exception:
+        pass
 
     # 2. Settings table
     cursor.execute("""
@@ -76,6 +93,7 @@ def init_db(seed_sample=False):
             mobile TEXT UNIQUE NOT NULL,
             college_name TEXT NOT NULL,
             mess_type TEXT NOT NULL CHECK(mess_type IN ('Veg', 'Non-Veg')),
+            meal_preference TEXT NOT NULL DEFAULT 'Both' CHECK(meal_preference IN ('Both', 'Lunch', 'Dinner')),
             status TEXT NOT NULL DEFAULT 'Active' CHECK(status IN ('Active', 'Expired', 'Deactivated')),
             admission_date DATE NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -125,10 +143,11 @@ def init_db(seed_sample=False):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             student_id TEXT NOT NULL,
             date DATE NOT NULL,
+            meal_session TEXT DEFAULT 'All',
             status TEXT NOT NULL CHECK(status IN ('Present', 'Absent')),
             marked_by TEXT DEFAULT 'admin',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(student_id, date),
+            UNIQUE(student_id, date, meal_session),
             FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
         );
     """)
@@ -162,6 +181,17 @@ def init_db(seed_sample=False):
             INSERT INTO users (username, password_hash, full_name, role)
             VALUES (?, ?, ?, ?)
         """, ('admin', hashed, 'Mess Chief Administrator', 'admin'))
+
+    # Default student demo user: student1 / password123 (linked to first student)
+    first_stu = cursor.execute("SELECT student_id, full_name FROM students LIMIT 1").fetchone()
+    if first_stu:
+        stu_exists = cursor.execute("SELECT id FROM users WHERE username = 'student1'").fetchone()
+        if not stu_exists:
+            hashed_stu = generate_password_hash("password123")
+            cursor.execute("""
+                INSERT INTO users (username, password_hash, full_name, role, student_id)
+                VALUES (?, ?, ?, 'student', ?)
+            """, ('student1', hashed_stu, first_stu['full_name'], first_stu['student_id']))
 
     # Default system settings
     default_settings = [
@@ -629,6 +659,87 @@ def seed_sample_data(conn):
 
     conn.commit()
     print("Database initialized and sample data seeded successfully!")
+
+def get_student_dashboard_data(student_id):
+    update_all_mess_expiries()
+    conn = get_db_connection()
+    today_str = date.today().isoformat()
+
+    student = conn.execute("SELECT * FROM students WHERE student_id = ?", (student_id,)).fetchone()
+    if not student:
+        conn.close()
+        return None
+
+    # Current active mess plan
+    current_plan = conn.execute("""
+        SELECT *, (julianday(current_expiry_date) - julianday(?)) as remaining_days
+        FROM mess_plans 
+        WHERE student_id = ? AND is_current = 1
+    """, (today_str, student_id)).fetchone()
+
+    # Plan history
+    plan_history = conn.execute("""
+        SELECT * FROM mess_plans WHERE student_id = ? ORDER BY id DESC
+    """, (student_id,)).fetchall()
+
+    # Total fees & payments
+    total_fees = conn.execute("SELECT COALESCE(SUM(total_fee), 0) as s FROM mess_plans WHERE student_id = ?", (student_id,)).fetchone()['s'] or 0.0
+    total_paid = conn.execute("SELECT COALESCE(SUM(amount), 0) as s FROM payments WHERE student_id = ?", (student_id,)).fetchone()['s'] or 0.0
+    balance = max(0.0, total_fees - total_paid)
+
+    # Payments list
+    payments = conn.execute("""
+        SELECT * FROM payments WHERE student_id = ? ORDER BY payment_date DESC, id DESC
+    """, (student_id,)).fetchall()
+
+    # Attendance stats
+    att_stats = conn.execute("""
+        SELECT 
+            COUNT(*) as total_days,
+            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present_days,
+            SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as absent_days
+        FROM attendance
+        WHERE student_id = ?
+    """, (student_id,)).fetchone()
+
+    # Recent attendance
+    recent_attendance = conn.execute("""
+        SELECT * FROM attendance WHERE student_id = ? ORDER BY date DESC, id DESC LIMIT 30
+    """, (student_id,)).fetchall()
+
+    # Today check-in status
+    today_att_lunch = conn.execute("""
+        SELECT status FROM attendance WHERE student_id = ? AND date = ? AND (meal_session = 'Lunch' OR meal_session = 'All')
+    """, (student_id, today_str)).fetchone()
+
+    today_att_dinner = conn.execute("""
+        SELECT status FROM attendance WHERE student_id = ? AND date = ? AND (meal_session = 'Dinner' OR meal_session = 'All')
+    """, (student_id, today_str)).fetchone()
+
+    # Absence adjustments
+    adjustments = conn.execute("""
+        SELECT * FROM absence_adjustments WHERE student_id = ? ORDER BY id DESC
+    """, (student_id,)).fetchall()
+
+    conn.close()
+
+    return {
+        "student": dict(student),
+        "current_plan": dict(current_plan) if current_plan else None,
+        "plan_history": [dict(p) for p in plan_history],
+        "total_fees": float(total_fees),
+        "total_paid": float(total_paid),
+        "balance": float(balance),
+        "payments": [dict(p) for p in payments],
+        "att_stats": dict(att_stats) if att_stats else {"total_days": 0, "present_days": 0, "absent_days": 0},
+        "recent_attendance": [dict(a) for a in recent_attendance],
+        "today_lunch": dict(today_att_lunch) if today_att_lunch else None,
+        "today_dinner": dict(today_att_dinner) if today_att_dinner else None,
+        "adjustments": [dict(a) for a in adjustments],
+        "today_date": today_str,
+        "qr_lunch_data": f"MESS-PASS|{student_id}|{student['full_name']}|{student['mess_type']}|LUNCH|{today_str}",
+        "qr_dinner_data": f"MESS-PASS|{student_id}|{student['full_name']}|{student['mess_type']}|DINNER|{today_str}"
+    }
 
 if __name__ == '__main__':
     import sys

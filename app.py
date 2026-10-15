@@ -123,6 +123,8 @@ def login_required(f):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
+        if session.get('role') == 'student':
+            return redirect(url_for('student_dashboard'))
         return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
@@ -156,14 +158,17 @@ def login():
                     session['username'] = user['username']
                     session['full_name'] = user['full_name']
                     session['role'] = user['role']
+                    session['student_id'] = dict(user).get('student_id') if 'student_id' in user.keys() else None
                     session['auth_provider'] = 'firebase'
                     flash(f"Welcome back, {user['full_name']} (Firebase Auth)!", "success")
                     next_page = request.args.get('next')
+                    if user['role'] == 'student':
+                        return redirect(next_page or url_for('student_dashboard'))
                     return redirect(next_page or url_for('dashboard'))
             except Exception as e:
                 print(f"Firebase password auth notice: {e}")
 
-        # 2. Local database user lookup (e.g., admin / admin123)
+        # 2. Local database user lookup (e.g., admin / admin123 or student1 / password123)
         conn = database.get_db_connection()
         user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
         conn.close()
@@ -173,9 +178,12 @@ def login():
             session['username'] = user['username']
             session['full_name'] = user['full_name']
             session['role'] = user['role']
+            session['student_id'] = dict(user).get('student_id') if 'student_id' in user.keys() else None
             session['auth_provider'] = 'local'
             flash(f"Welcome back, {user['full_name']}!", "success")
             next_page = request.args.get('next')
+            if user['role'] == 'student':
+                return redirect(next_page or url_for('student_dashboard'))
             return redirect(next_page or url_for('dashboard'))
         else:
             flash("Invalid username or password. Please try again.", "danger")
@@ -239,12 +247,241 @@ def logout():
     flash("You have been signed out successfully.", "info")
     return redirect(url_for('login'))
 
-# ----------------- DASHBOARD ----------------- #
+# ----------------- USER REGISTRATION WITH MEAL SELECTION ----------------- #
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if 'user_id' in session:
+        if session.get('role') == 'student':
+            return redirect(url_for('student_dashboard'))
+        return redirect(url_for('dashboard'))
+
+    conn = database.get_db_connection()
+    default_veg = float(database.get_setting('veg_monthly_fee', '3200'))
+    default_nonveg = float(database.get_setting('nonveg_monthly_fee', '4200'))
+    currency_symbol = database.get_setting('currency_symbol', '₹')
+
+    if request.method == 'POST':
+        full_name = request.form.get('full_name', '').strip()
+        mobile = request.form.get('mobile', '').strip()
+        college_name = request.form.get('college_name', '').strip()
+        username = request.form.get('username', '').strip() or mobile
+        password = request.form.get('password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        # Meal selection options
+        mess_type = request.form.get('mess_type', 'Veg')
+        meal_preference = request.form.get('meal_preference', 'Both')
+        start_date_str = request.form.get('start_date', '').strip() or date.today().isoformat()
+        
+        try:
+            plan_duration = int(request.form.get('plan_duration', 30))
+            base_fee = default_veg if mess_type == 'Veg' else default_nonveg
+            calc_fee = (base_fee / 30.0) * plan_duration
+            if meal_preference in ('Lunch', 'Dinner'):
+                calc_fee = calc_fee * 0.6  # 40% reduction for single session
+            
+            total_fee = float(request.form.get('total_fee', calc_fee))
+            amount_paid = float(request.form.get('amount_paid', 0.0))
+        except ValueError:
+            flash("Invalid numeric value for duration or fee amount.", "danger")
+            conn.close()
+            return redirect(url_for('register'))
+
+        payment_method = request.form.get('payment_method', 'UPI')
+        notes = request.form.get('notes', 'Initial student admission registration')
+
+        # Validation checks
+        if not full_name or not mobile or not college_name or not password:
+            flash("Please complete all required fields (Name, Mobile, College, Password).", "danger")
+            conn.close()
+            return redirect(url_for('register'))
+
+        if password != confirm_password:
+            flash("Passwords do not match. Please verify and try again.", "danger")
+            conn.close()
+            return redirect(url_for('register'))
+
+        if len(mobile) < 10:
+            flash("Please enter a valid 10-digit mobile number.", "danger")
+            conn.close()
+            return redirect(url_for('register'))
+
+        dup_user = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+        if dup_user:
+            flash(f"The username '{username}' is already in use. Please select another.", "danger")
+            conn.close()
+            return redirect(url_for('register'))
+
+        dup_stu = conn.execute("SELECT id FROM students WHERE mobile = ?", (mobile,)).fetchone()
+        if dup_stu:
+            flash(f"A student account with mobile {mobile} already exists. Please sign in.", "warning")
+            conn.close()
+            return redirect(url_for('login'))
+
+        student_id = database.generate_student_id()
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        expiry_date = start_date + timedelta(days=plan_duration)
+        expiry_date_str = expiry_date.isoformat()
+
+        cursor = conn.cursor()
+        # 1. Insert student record
+        cursor.execute("""
+            INSERT INTO students (student_id, full_name, mobile, college_name, mess_type, meal_preference, status, admission_date)
+            VALUES (?, ?, ?, ?, ?, ?, 'Active', ?)
+        """, (student_id, full_name, mobile, college_name, mess_type, meal_preference, start_date_str))
+
+        # 2. Insert initial mess plan
+        cursor.execute("""
+            INSERT INTO mess_plans (
+                student_id, plan_duration_days, start_date, original_expiry_date,
+                current_expiry_date, total_extension_days, mess_type, total_fee, status, is_current
+            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, 'Active', 1)
+        """, (student_id, plan_duration, start_date_str, expiry_date_str, expiry_date_str, mess_type, total_fee))
+        plan_id = cursor.lastrowid
+
+        # 3. Insert payment if any initial amount was paid
+        if amount_paid > 0:
+            receipt_no = database.generate_receipt_no()
+            cursor.execute("""
+                INSERT INTO payments (receipt_no, student_id, plan_id, amount, payment_date, payment_method, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (receipt_no, student_id, plan_id, amount_paid, start_date_str, payment_method, notes))
+
+        # 4. Insert student user account
+        hashed_pw = generate_password_hash(password)
+        cursor.execute("""
+            INSERT INTO users (username, password_hash, full_name, role, student_id)
+            VALUES (?, ?, ?, 'student', ?)
+        """, (username, hashed_pw, full_name, student_id))
+        new_user_id = cursor.lastrowid
+
+        conn.commit()
+        conn.close()
+
+        # Log in newly registered student
+        session['user_id'] = new_user_id
+        session['username'] = username
+        session['full_name'] = full_name
+        session['role'] = 'student'
+        session['student_id'] = student_id
+        session['auth_provider'] = 'local'
+
+        flash(f"Account created successfully! Welcome to MessMaster, {full_name} (ID: {student_id}).", "success")
+        return redirect(url_for('student_dashboard'))
+
+    conn.close()
+    return render_template('register.html',
+        default_veg=default_veg,
+        default_nonveg=default_nonveg,
+        currency_symbol=currency_symbol,
+        today_date=date.today().isoformat()
+    )
+
+# ----------------- DEDICATED STUDENT USER DASHBOARD ----------------- #
+
+@app.route('/student/dashboard')
+@app.route('/my-dashboard')
+@login_required
+def student_dashboard():
+    database.update_all_mess_expiries()
+    
+    # If admin, allow inspecting a specific student via ?student_id=...
+    student_id = request.args.get('student_id')
+    if not student_id or session.get('role') == 'student':
+        student_id = session.get('student_id')
+
+    if not student_id:
+        conn = database.get_db_connection()
+        first_stu = conn.execute("SELECT student_id FROM students WHERE status = 'Active' LIMIT 1").fetchone()
+        conn.close()
+        if first_stu:
+            student_id = first_stu['student_id']
+        else:
+            flash("No student record found to display.", "warning")
+            return redirect(url_for('students'))
+
+    data = database.get_student_dashboard_data(student_id)
+    if not data:
+        flash(f"Student record {student_id} not found.", "danger")
+        return redirect(url_for('dashboard'))
+
+    currency_symbol = database.get_setting('currency_symbol', '₹')
+    mess_name = database.get_setting('mess_name', 'Campus Dining Facility')
+    college_name = database.get_setting('college_name', 'Campus Institution')
+
+    return render_template('student_dashboard.html',
+        **data,
+        currency_symbol=currency_symbol,
+        mess_name=mess_name,
+        college_name=college_name
+    )
+
+# ----------------- QUICK QR CHECK-IN API ----------------- #
+
+@app.route('/api/qr-checkin', methods=['POST'])
+@login_required
+def api_qr_checkin():
+    data = request.get_json() or {}
+    student_id = data.get('student_id')
+    meal_session = data.get('meal_session', 'Lunch')
+    today_str = date.today().isoformat()
+
+    if not student_id:
+        student_id = session.get('student_id')
+
+    if not student_id:
+        return jsonify({'success': False, 'message': 'Student ID is required'}), 400
+
+    conn = database.get_db_connection()
+    student = conn.execute("SELECT full_name, status, mess_type FROM students WHERE student_id = ?", (student_id,)).fetchone()
+    if not student:
+        conn.close()
+        return jsonify({'success': False, 'message': 'Student record not found'}), 404
+
+    if student['status'] == 'Expired':
+        conn.close()
+        return jsonify({'success': False, 'message': f"Student plan has expired. Please renew plan before {meal_session} check-in."}), 400
+
+    if student['status'] == 'Deactivated':
+        conn.close()
+        return jsonify({'success': False, 'message': 'Student account is deactivated. Contact mess office.'}), 400
+
+    # Record attendance safely
+    cursor = conn.cursor()
+    existing = cursor.execute("SELECT id FROM attendance WHERE student_id = ? AND date = ?", (student_id, today_str)).fetchone()
+    if existing:
+        cursor.execute("""
+            UPDATE attendance 
+            SET status = 'Present', meal_session = ?, marked_by = ?, created_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (meal_session, session.get('username', 'qr-scanner'), existing['id']))
+    else:
+        cursor.execute("""
+            INSERT INTO attendance (student_id, date, meal_session, status, marked_by)
+            VALUES (?, ?, ?, 'Present', ?)
+        """, (student_id, today_str, meal_session, session.get('username', 'qr-scanner')))
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        'success': True,
+        'message': f"Check-in verified for {student['full_name']} ({student['mess_type']} Mess - {meal_session})!",
+        'student_id': student_id,
+        'student_name': student['full_name'],
+        'meal_session': meal_session,
+        'date': today_str,
+        'status': 'Present'
+    })
+
+# ----------------- ADMIN DASHBOARD ----------------- #
 
 @app.route('/')
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    if session.get('role') == 'student':
+        return redirect(url_for('student_dashboard'))
     database.update_all_mess_expiries()
     conn = database.get_db_connection()
     today_str = date.today().isoformat()
