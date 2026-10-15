@@ -18,11 +18,14 @@
     <!-- Sidebar Navigation -->
     <aside class="sidebar" id="appSidebar">
       <div class="sidebar-header">
-        <div class="brand-icon">🍽️</div>
-        <div class="brand-title">
-          <span class="brand-name">MessMaster</span>
-          <span class="brand-sub">Campus Dining Ops</span>
+        <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1;">
+          <div class="brand-icon">🍽️</div>
+          <div class="brand-title">
+            <span class="brand-name">MessMaster</span>
+            <span class="brand-sub">Campus Dining Ops</span>
+          </div>
         </div>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close Navigation">&times;</button>
       </div>
 
       <nav class="sidebar-nav">
@@ -126,6 +129,9 @@
       </div>
     </aside>
 
+    <!-- Mobile Sidebar Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
     <!-- Main Content Wrapper -->
     <div class="main-wrapper">
       
@@ -135,7 +141,7 @@
           <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle Navigation">☰</button>
           <div class="page-breadcrumb">
             <h1 class="page-title">{% block page_title %}College Mess Management{% endblock %}</h1>
-            <span style="font-size: 11.5px; color: var(--text-muted);">{{ mess_name }} &bull; {{ college_name }}</span>
+            <span class="topbar-subtext">{{ mess_name }} &bull; {{ college_name }}</span>
           </div>
         </div>
 
@@ -144,13 +150,13 @@
             <span>🗓️</span>
             <span>{{ today_date }}</span>
           </div>
-          <a href="{{ url_for('admission') }}" class="btn btn-primary btn-sm" id="btn-quick-admission">
+          <a href="{{ url_for('admission') }}" class="btn btn-primary btn-sm btn-quick-admit" id="btn-quick-admission">
             <span>➕</span>
-            <span>New Admission</span>
+            <span class="btn-text">New Admission</span>
           </a>
           <a href="{{ url_for('logout') }}" class="btn btn-secondary btn-sm" title="Sign Out">
             <span>🚪</span>
-            <span>Logout</span>
+            <span class="btn-text-logout">Logout</span>
           </a>
         </div>
       </header>

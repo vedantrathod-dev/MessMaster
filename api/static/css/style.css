@@ -979,33 +979,363 @@ a:hover {
   }
 }
 
-/* Responsive Styles */
-@media (max-width: 1024px) {
+/* Mobile Sidebar Backdrop */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-backdrop.active {
+  display: block;
+  opacity: 1;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.sidebar-close-btn:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Base Responsive Enhancements */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  min-width: 660px;
+}
+
+/* ===================================================================
+   RESPONSIVE BREAKPOINTS (ALL DEVICES: DESKTOP, TABLET, MOBILE)
+   =================================================================== */
+
+/* 1. Large Laptops & Desktops (max-width: 1200px) */
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 3fr 2fr;
+    gap: 18px;
   }
 }
 
+/* 2. Tablets & Small Laptops (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+
+  .content-body {
+    padding: 22px 24px 40px;
+  }
+
+  .topbar {
+    padding: 0 24px;
+  }
+}
+
+/* 3. Small Tablets & Phablets (max-width: 768px) */
 @media (max-width: 768px) {
+  :root {
+    --header-height: 60px;
+  }
+
+  /* Slide-in Mobile Drawer Sidebar */
   .sidebar {
     transform: translateX(-100%);
+    box-shadow: none;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
   .sidebar.mobile-open {
     transform: translateX(0);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
   }
-  .main-wrapper {
-    margin-left: 0;
-  }
-  .mobile-menu-toggle {
+
+  .sidebar-close-btn {
     display: block;
   }
+
+  .main-wrapper {
+    margin-left: 0 !important;
+    width: 100%;
+    min-width: 100%;
+  }
+
+  /* Topbar Mobile Adjustments */
+  .mobile-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    background-color: #f1f5f9;
+    border: 1px solid var(--card-border);
+    font-size: 20px;
+    color: var(--text-main);
+  }
+
+  .mobile-menu-toggle:active {
+    background-color: #e2e8f0;
+  }
+
   .topbar {
     padding: 0 16px;
   }
+
+  .topbar-subtext {
+    display: none;
+  }
+
+  .page-title {
+    font-size: 15px;
+  }
+
+  .date-indicator {
+    display: none;
+  }
+
+  .btn-quick-admit .btn-text {
+    display: none;
+  }
+
+  .btn-text-logout {
+    display: none;
+  }
+
   .content-body {
+    padding: 16px 14px 40px;
+  }
+
+  /* Stats Grid (2 columns on mobile) */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    padding: 14px;
+  }
+
+  .stat-value {
+    font-size: 21px;
+  }
+
+  .stat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .stat-footer {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  /* Toolbar & Filter Responsiveness */
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .filter-group .form-control,
+  .filter-group .form-select,
+  .filter-group .btn {
+    width: 100% !important;
+  }
+
+  .search-box {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  /* Form Controls (iOS Safari Auto-Zoom Prevention: font-size >= 16px) */
+  .form-control,
+  .form-select {
+    font-size: 16px !important;
+    padding: 11px 12px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .btn-lg {
+    width: 100%;
+    padding: 12px;
+  }
+
+  /* Modals on Mobile */
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-lg);
+  }
+
+  .modal-header {
+    padding: 14px 18px;
+  }
+
+  .modal-title {
+    font-size: 15px;
+  }
+
+  .modal-body {
     padding: 16px;
   }
+
+  .modal-footer {
+    padding: 12px 16px;
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    width: 100%;
+  }
+
+  /* Panels */
+  .panel-header {
+    padding: 14px 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .panel-title {
+    font-size: 14.5px;
+  }
+
+  .panel-body {
+    padding: 16px;
+  }
+}
+
+/* 4. Compact Mobile Devices (max-width: 480px) */
+@media (max-width: 480px) {
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .page-title {
+    font-size: 14px;
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 12px 10px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .stat-footer {
+    display: none; /* Hide verbose footer on extra small screens for clean scan */
+  }
+
+  .content-body {
+    padding: 12px 10px 36px;
+  }
+
+  /* Receipt Mobile Adjustments */
+  .receipt-container {
+    padding: 20px 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .receipt-meta {
+    flex-direction: column;
+    gap: 12px;
+    text-align: left !important;
+  }
+
+  .receipt-meta div:last-child {
+    text-align: left !important;
+  }
+
+  .receipt-footer {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .signature-box {
+    width: 100%;
+  }
+}
+
+/* 5. Ultra Compact Mobile (max-width: 360px) */
+@media (max-width: 360px) {
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .topbar-right {
+    gap: 6px;
+  }
+
+  .btn-sm {
+    padding: 5px 8px;
+    font-size: 11.5px;
   }
 }

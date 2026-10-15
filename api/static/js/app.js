@@ -3,21 +3,53 @@
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-  // 1. Mobile Sidebar Toggle
+  // 1. Mobile Sidebar & Backdrop Toggle
   const toggleBtn = document.getElementById('mobileMenuToggle');
+  const closeBtn = document.getElementById('sidebarCloseBtn');
   const sidebar = document.getElementById('appSidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+
+  function openSidebar() {
+    if (sidebar) sidebar.classList.add('mobile-open');
+    if (backdrop) backdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar() {
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (backdrop) backdrop.classList.remove('active');
+    document.body.style.overflow = '';
+  }
 
   if (toggleBtn && sidebar) {
-    toggleBtn.addEventListener('click', function () {
-      sidebar.classList.toggle('mobile-open');
+    toggleBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (sidebar.classList.contains('mobile-open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
     });
 
-    // Close on outside click on mobile
-    document.addEventListener('click', function (e) {
-      if (window.innerWidth <= 768) {
-        if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target) && sidebar.classList.contains('mobile-open')) {
-          sidebar.classList.remove('mobile-open');
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+    // Close when clicking nav items on mobile
+    sidebar.querySelectorAll('.nav-item').forEach(function (item) {
+      item.addEventListener('click', function () {
+        if (window.innerWidth <= 1024) {
+          closeSidebar();
         }
+      });
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closeSidebar();
+        document.querySelectorAll('.modal-overlay.active').forEach(function (modal) {
+          modal.classList.remove('active');
+        });
       }
     });
   }
