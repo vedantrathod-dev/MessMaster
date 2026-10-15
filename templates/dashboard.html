@@ -26,7 +26,7 @@
      HERO SECTION (EXACT REFERENCE IMAGE REPLICA)
      =================================================================== -->
 <div class="dashboard-hero-layout">
-  
+
   <!-- Hero Left: Total Balance & Area Spline Chart -->
   <div class="hero-chart-card">
     <div class="hero-card-header">
@@ -88,52 +88,6 @@
     </div>
   </div>
 
-  <!-- Hero Right: Glowing Amber "My Cards" Stack -->
-  <div class="glowing-amber-card">
-    <div>
-      <div class="amber-card-top">
-        <h3>My cards</h3>
-        <button class="pill-add-btn" onclick="window.location.href='{{ url_for('admission') }}'">+ Add new</button>
-      </div>
-
-      <!-- Layered Card Stack Graphic -->
-      <div class="card-stack-container">
-        <!-- Back Tab 1 -->
-        <div class="card-stack-back-tab tab-1">
-          <span>VISA</span>
-          <span>{{ currency_symbol }}4,150.00</span>
-        </div>
-        <!-- Back Tab 2 -->
-        <div class="card-stack-back-tab tab-2">
-          <span>MASTERCARD</span>
-          <span>{{ currency_symbol }}3,140.00</span>
-        </div>
-        <!-- Front Main Card -->
-        <div class="pass-card-graphic">
-          <div class="pass-card-brand">
-            <span>VISA</span>
-            <div class="emv-chip" title="EMV Smart Dining Chip"></div>
-          </div>
-          <div class="pass-card-balance">Balance</div>
-          <div class="pass-card-amount">
-            <span>{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</span>
-            <span class="badge-upward" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">↑ 3.52%</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="amber-card-actions">
-      <button class="btn-card-request" onclick="openModal('paymentModal')">
-        <span style="font-size: 15px;">↘</span> Request
-      </button>
-      <button class="btn-card-transfer" onclick="window.location.href='{{ url_for('admission') }}'">
-        <span style="font-size: 15px;">↗</span> Transfer
-      </button>
-    </div>
-  </div>
-
 </div>
 
 <!-- ===================================================================
@@ -186,7 +140,8 @@
       <span class="stat-label">Fees Collected</span>
       <div class="stat-icon success">💰</div>
     </div>
-    <div class="stat-value" style="color: var(--accent-green);">{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected) }}</div>
+    <div class="stat-value" style="color: var(--accent-green);">{{ currency_symbol }}{{
+      "%.2f"|format(total_fees_collected) }}</div>
     <div class="stat-footer">Total payments deposited</div>
   </div>
 
@@ -196,7 +151,8 @@
       <span class="stat-label">Pending Payments</span>
       <div class="stat-icon warning">⏳</div>
     </div>
-    <div class="stat-value" style="color: var(--accent-amber);">{{ currency_symbol }}{{ "%.2f"|format(pending_payments) }}</div>
+    <div class="stat-value" style="color: var(--accent-amber);">{{ currency_symbol }}{{ "%.2f"|format(pending_payments)
+      }}</div>
     <div class="stat-footer">Outstanding balance to collect</div>
   </div>
 
@@ -245,13 +201,13 @@
      DASHBOARD BOTTOM THREE-COLUMN SECTION (EXACT IMAGE REPLICA)
      =================================================================== -->
 <div class="dashboard-bottom-layout">
-  
+
   <!-- 1. Left Card: Amber Promo Card -->
   <div class="glowing-amber-promo-card">
     <div>
       <h3 class="promo-title">Trusted by Thousands<br>Join Us Today!</h3>
       <p class="promo-subtext">Secure, reliable, and trusted by customers worldwide</p>
-      
+
       <!-- Avatar Cluster from Image -->
       <div class="avatar-pile">
         <div class="avatar-pile-item" style="background: #3b82f6;">👩</div>
@@ -270,7 +226,8 @@
       <div class="investments-title-wrap">
         <h4>Investments</h4>
         <div class="investments-amount">
-          <span>{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected if total_fees_collected > 0 else 3200) }}</span>
+          <span>{{ currency_symbol }}{{ "%.2f"|format(total_fees_collected if total_fees_collected > 0 else 3200)
+            }}</span>
           <span class="badge-upward">↑ 1.52%</span>
         </div>
       </div>
@@ -295,54 +252,54 @@
 
     <div class="transaction-list">
       {% if recent_payments %}
-        {% for p in recent_payments %}
-          <div class="transaction-item">
-            <div class="tx-left">
-              <div class="tx-avatar photo-avatar">
-                {{ p.full_name[:1]|upper }}
-              </div>
-              <div class="tx-meta">
-                <span class="tx-name">{{ p.full_name }}</span>
-                <span class="tx-time">{{ p.payment_date }} &bull; {{ p.payment_method }}</span>
-              </div>
-            </div>
-            <div class="tx-amount positive">+{{ currency_symbol }}{{ "%.2f"|format(p.amount) }}</div>
+      {% for p in recent_payments %}
+      <div class="transaction-item">
+        <div class="tx-left">
+          <div class="tx-avatar photo-avatar">
+            {{ p.full_name[:1]|upper }}
           </div>
-        {% endfor %}
+          <div class="tx-meta">
+            <span class="tx-name">{{ p.full_name }}</span>
+            <span class="tx-time">{{ p.payment_date }} &bull; {{ p.payment_method }}</span>
+          </div>
+        </div>
+        <div class="tx-amount positive">+{{ currency_symbol }}{{ "%.2f"|format(p.amount) }}</div>
+      </div>
+      {% endfor %}
       {% else %}
-        <!-- Default sample transactions matching image layout -->
-        <div class="transaction-item">
-          <div class="tx-left">
-            <div class="tx-avatar photo-avatar">LB</div>
-            <div class="tx-meta">
-              <span class="tx-name">Lucas Bennett</span>
-              <span class="tx-time">20 Jan, 02:00 PM</span>
-            </div>
+      <!-- Default sample transactions matching image layout -->
+      <div class="transaction-item">
+        <div class="tx-left">
+          <div class="tx-avatar photo-avatar">LB</div>
+          <div class="tx-meta">
+            <span class="tx-name">Lucas Bennett</span>
+            <span class="tx-time">20 Jan, 02:00 PM</span>
           </div>
-          <div class="tx-amount positive">+{{ currency_symbol }}25.00</div>
         </div>
+        <div class="tx-amount positive">+{{ currency_symbol }}25.00</div>
+      </div>
 
-        <div class="transaction-item">
-          <div class="tx-left">
-            <div class="tx-avatar" style="background: rgba(255, 255, 255, 0.08);">📁</div>
-            <div class="tx-meta">
-              <span class="tx-name">Google Drive</span>
-              <span class="tx-time">20 Jan, 02:00 PM</span>
-            </div>
+      <div class="transaction-item">
+        <div class="tx-left">
+          <div class="tx-avatar" style="background: rgba(255, 255, 255, 0.08);">📁</div>
+          <div class="tx-meta">
+            <span class="tx-name">Google Drive</span>
+            <span class="tx-time">20 Jan, 02:00 PM</span>
           </div>
-          <div class="tx-amount negative">-{{ currency_symbol }}5.00</div>
         </div>
+        <div class="tx-amount negative">-{{ currency_symbol }}5.00</div>
+      </div>
 
-        <div class="transaction-item">
-          <div class="tx-left">
-            <div class="tx-avatar" style="background: rgba(255, 255, 255, 0.08);">👟</div>
-            <div class="tx-meta">
-              <span class="tx-name">Nike Store</span>
-              <span class="tx-time">19 Jan, 02:00 PM</span>
-            </div>
+      <div class="transaction-item">
+        <div class="tx-left">
+          <div class="tx-avatar" style="background: rgba(255, 255, 255, 0.08);">👟</div>
+          <div class="tx-meta">
+            <span class="tx-name">Nike Store</span>
+            <span class="tx-time">19 Jan, 02:00 PM</span>
           </div>
-          <div class="tx-amount negative">-{{ currency_symbol }}55.00</div>
         </div>
+        <div class="tx-amount negative">-{{ currency_symbol }}55.00</div>
+      </div>
       {% endif %}
     </div>
   </div>
@@ -374,34 +331,36 @@
           </thead>
           <tbody>
             {% if expiring_soon %}
-              {% for s in expiring_soon %}
-                <tr>
-                  <td><strong><a href="{{ url_for('student_profile', student_id=s.student_id) }}">{{ s.student_id }}</a></strong></td>
-                  <td>{{ s.full_name }}</td>
-                  <td>
-                    <span class="badge {% if s.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
-                      {{ s.mess_type }}
-                    </span>
-                  </td>
-                  <td>{{ s.current_expiry_date }}</td>
-                  <td>
-                    <span class="badge" style="background: var(--accent-amber-bg); color: var(--accent-amber-text);">
-                      {{ s.days_left|int }} day(s) left
-                    </span>
-                  </td>
-                  <td>
-                    <button class="btn btn-primary btn-sm" onclick="populateRenewModal('{{ s.student_id }}', '{{ s.full_name }}', '{{ s.mess_type }}')">
-                      Renew
-                    </button>
-                  </td>
-                </tr>
-              {% endfor %}
+            {% for s in expiring_soon %}
+            <tr>
+              <td><strong><a href="{{ url_for('student_profile', student_id=s.student_id) }}">{{ s.student_id
+                    }}</a></strong></td>
+              <td>{{ s.full_name }}</td>
+              <td>
+                <span class="badge {% if s.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+                  {{ s.mess_type }}
+                </span>
+              </td>
+              <td>{{ s.current_expiry_date }}</td>
+              <td>
+                <span class="badge" style="background: var(--accent-amber-bg); color: var(--accent-amber-text);">
+                  {{ s.days_left|int }} day(s) left
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-primary btn-sm"
+                  onclick="populateRenewModal('{{ s.student_id }}', '{{ s.full_name }}', '{{ s.mess_type }}')">
+                  Renew
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
             {% else %}
-              <tr>
-                <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">
-                  ✨ No students are expiring in the next 3 days. All plans active!
-                </td>
-              </tr>
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-secondary);">
+                ✨ No students are expiring in the next 3 days. All plans active!
+              </td>
+            </tr>
             {% endif %}
           </tbody>
         </table>
@@ -428,35 +387,38 @@
           </thead>
           <tbody>
             {% if eligible_absences %}
-              {% for adj in eligible_absences %}
-                <tr>
-                  <td>
-                    <strong><a href="{{ url_for('student_profile', student_id=adj.student_id) }}">{{ adj.student_name }}</a></strong>
-                    <div style="font-size: 11px; color: var(--text-secondary);">{{ adj.student_id }} &bull; {{ adj.mess_type }}</div>
-                  </td>
-                  <td>
-                    <span class="badge" style="background: var(--accent-amber-bg); color: var(--accent-amber-text);">
-                      {{ adj.consecutive_count }} Consecutive Days
-                    </span>
-                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">{{ adj.absent_dates_str }}</div>
-                  </td>
-                  <td>
-                    <div style="font-weight: 600; color: var(--accent-green);">{{ adj.proposed_expiry_date }}</div>
-                    <div style="font-size: 11px; color: var(--text-secondary);">(+{{ adj.credited_days }} days credit)</div>
-                  </td>
-                  <td>
-                    <a href="{{ url_for('absent_approvals') }}" class="btn btn-success btn-sm">
-                      Approve
-                    </a>
-                  </td>
-                </tr>
-              {% endfor %}
+            {% for adj in eligible_absences %}
+            <tr>
+              <td>
+                <strong><a href="{{ url_for('student_profile', student_id=adj.student_id) }}">{{ adj.student_name
+                    }}</a></strong>
+                <div style="font-size: 11px; color: var(--text-secondary);">{{ adj.student_id }} &bull; {{ adj.mess_type
+                  }}</div>
+              </td>
+              <td>
+                <span class="badge" style="background: var(--accent-amber-bg); color: var(--accent-amber-text);">
+                  {{ adj.consecutive_count }} Consecutive Days
+                </span>
+                <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">{{ adj.absent_dates_str }}
+                </div>
+              </td>
+              <td>
+                <div style="font-weight: 600; color: var(--accent-green);">{{ adj.proposed_expiry_date }}</div>
+                <div style="font-size: 11px; color: var(--text-secondary);">(+{{ adj.credited_days }} days credit)</div>
+              </td>
+              <td>
+                <a href="{{ url_for('absent_approvals') }}" class="btn btn-success btn-sm">
+                  Approve
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
             {% else %}
-              <tr>
-                <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">
-                  ✨ No active students currently have 3 or more consecutive uncredited absent days.
-                </td>
-              </tr>
+            <tr>
+              <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-secondary);">
+                ✨ No active students currently have 3 or more consecutive uncredited absent days.
+              </td>
+            </tr>
             {% endif %}
           </tbody>
         </table>
@@ -474,7 +436,7 @@
 
   if (heroCanvas) {
     const ctx = heroCanvas.getContext('2d');
-    
+
     // Create subtle warm orange gradient fill
     const amberGradient = ctx.createLinearGradient(0, 0, 0, 220);
     amberGradient.addColorStop(0, 'rgba(255, 106, 0, 0.45)');
@@ -495,14 +457,14 @@
           backgroundColor: amberGradient,
           fill: true,
           tension: 0.42,
-          pointBackgroundColor: function(context) {
+          pointBackgroundColor: function (context) {
             return context.dataIndex === 6 ? '#ffffff' : 'transparent';
           },
-          pointBorderColor: function(context) {
+          pointBorderColor: function (context) {
             return context.dataIndex === 6 ? '#ff6a00' : 'transparent';
           },
           pointBorderWidth: 3,
-          pointRadius: function(context) {
+          pointRadius: function (context) {
             return context.dataIndex === 6 ? 6 : 0;
           },
           pointHoverRadius: 7
@@ -515,7 +477,7 @@
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 return ' ' + context.parsed.y.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
               }
             }
@@ -534,7 +496,7 @@
             ticks: {
               color: '#6e675f',
               font: { size: 11 },
-              callback: function(value) {
+              callback: function (value) {
                 if (value >= 1000) return '$' + (value / 1000) + 'k';
                 return '$' + value;
               }
@@ -560,7 +522,7 @@
   const barCanvas = document.getElementById('investmentsBarChart');
   if (barCanvas) {
     const ctxBar = barCanvas.getContext('2d');
-    
+
     // Bar gradient for standard bars vs emerald highlight for Jan
     const barGradient = ctxBar.createLinearGradient(0, 0, 0, 180);
     barGradient.addColorStop(0, '#3a3229');
@@ -576,10 +538,10 @@
         labels: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'],
         datasets: [{
           data: [200, 300, 400, 400, 500, 400],
-          backgroundColor: function(context) {
+          backgroundColor: function (context) {
             return context.dataIndex === 4 ? emeraldGradient : barGradient;
           },
-          borderColor: function(context) {
+          borderColor: function (context) {
             return context.dataIndex === 4 ? '#34d399' : 'transparent';
           },
           borderWidth: 1,
@@ -594,7 +556,7 @@
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 return ' $' + context.parsed.y;
               }
             }
