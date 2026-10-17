@@ -95,12 +95,20 @@ def inject_global_data():
         SELECT COUNT(*) as count FROM students WHERE status = 'Expired'
     """).fetchone()['count']
 
-    conn.close()
+    # System fee settings
+    veg_monthly_fee = float(database.get_setting('veg_monthly_fee', '3200'))
+    nonveg_monthly_fee = float(database.get_setting('nonveg_monthly_fee', '4200'))
+    veg_1time_monthly_fee = float(database.get_setting('veg_1time_monthly_fee', '1920'))
+    nonveg_1time_monthly_fee = float(database.get_setting('nonveg_1time_monthly_fee', '2520'))
 
     return {
         'mess_name': mess_name,
         'college_name': college_name,
         'currency_symbol': currency_symbol,
+        'veg_monthly_fee': veg_monthly_fee,
+        'nonveg_monthly_fee': nonveg_monthly_fee,
+        'veg_1time_monthly_fee': veg_1time_monthly_fee,
+        'nonveg_1time_monthly_fee': nonveg_1time_monthly_fee,
         'current_user': user,
         'today_date': date.today().isoformat(),
         'badge_expiring_count': expiring_count,
@@ -131,7 +139,49 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
 
-        # 1. If username is an email, try Firebase Auth sign-in with password first
+        if not username:
+            flash("Please enter your Mobile Number, Email ID, or Username.", "warning")
+            return render_template('login.html', firebase_config=FIREBASE_CONFIG)
+
+        conn = database.get_db_connection()
+
+        # 1. Check if identifier belongs to a Student (Mobile Number, Email ID, or Student ID)
+        student = conn.execute("""
+            SELECT * FROM students 
+            WHERE mobile = ? OR email = ? OR student_id = ?
+        """, (username, username, username)).fetchone()
+
+        if student:
+            # Student account found! Look up linked user record
+            user = conn.execute("""
+                SELECT * FROM users 
+                WHERE student_id = ? OR username = ? OR email = ?
+            """, (student['student_id'], student['mobile'], student['email'])).fetchone()
+
+            # For students, login is verified by their registered Mobile Number or Email ID
+            # If a password was submitted, verify it matches hash or mobile number
+            is_valid_student = True
+            if password and user and user['password_hash']:
+                if not check_password_hash(user['password_hash'], password) and password != student['mobile']:
+                    is_valid_student = False
+
+            if is_valid_student:
+                conn.close()
+                session['user_id'] = user['id'] if user else 999
+                session['username'] = student['mobile']
+                session['full_name'] = student['full_name']
+                session['role'] = 'student'
+                session['student_id'] = student['student_id']
+                session['auth_provider'] = 'local'
+                flash(f"Welcome back, {student['full_name']}!", "success")
+                next_page = request.args.get('next')
+                return redirect(next_page or url_for('student_dashboard'))
+            else:
+                conn.close()
+                flash("Incorrect password. Students can leave password blank or enter their registered Mobile Number.", "danger")
+                return render_template('login.html', firebase_config=FIREBASE_CONFIG)
+
+        # 2. If username is an email, try Firebase Auth sign-in with password
         if '@' in username:
             try:
                 fb_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_CONFIG['apiKey']}"
@@ -142,14 +192,13 @@ def login():
                     verified_email = fb_res.get('email', username)
                     display_name = fb_res.get('displayName') or verified_email.split('@')[0]
 
-                    conn = database.get_db_connection()
                     cursor = conn.cursor()
-                    user = cursor.execute("SELECT * FROM users WHERE username = ?", (verified_email,)).fetchone()
+                    user = cursor.execute("SELECT * FROM users WHERE username = ? OR email = ?", (verified_email, verified_email)).fetchone()
                     if not user:
                         cursor.execute("""
-                            INSERT INTO users (username, password_hash, full_name, role)
-                            VALUES (?, ?, ?, 'admin')
-                        """, (verified_email, generate_password_hash(password), display_name))
+                            INSERT INTO users (username, email, password_hash, full_name, role)
+                            VALUES (?, ?, ?, ?, 'admin')
+                        """, (verified_email, verified_email, generate_password_hash(password), display_name))
                         conn.commit()
                         user = cursor.execute("SELECT * FROM users WHERE username = ?", (verified_email,)).fetchone()
                     conn.close()
@@ -168,9 +217,8 @@ def login():
             except Exception as e:
                 print(f"Firebase password auth notice: {e}")
 
-        # 2. Local database user lookup (e.g., admin / admin123 or student1 / password123)
-        conn = database.get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+        # 3. Local database admin user lookup (e.g., admin / admin123)
+        user = conn.execute("SELECT * FROM users WHERE username = ? OR email = ?", (username, username)).fetchone()
         conn.close()
 
         if user and check_password_hash(user['password_hash'], password):
@@ -186,7 +234,7 @@ def login():
                 return redirect(next_page or url_for('student_dashboard'))
             return redirect(next_page or url_for('dashboard'))
         else:
-            flash("Invalid username or password. Please try again.", "danger")
+            flash("Invalid credentials. Please enter a valid Mobile Number, Email ID, or Admin password.", "danger")
 
     return render_template('login.html', firebase_config=FIREBASE_CONFIG)
 
@@ -259,27 +307,32 @@ def register():
     conn = database.get_db_connection()
     default_veg = float(database.get_setting('veg_monthly_fee', '3200'))
     default_nonveg = float(database.get_setting('nonveg_monthly_fee', '4200'))
+    default_veg_1time = float(database.get_setting('veg_1time_monthly_fee', '1920'))
+    default_nonveg_1time = float(database.get_setting('nonveg_1time_monthly_fee', '2520'))
     currency_symbol = database.get_setting('currency_symbol', '₹')
 
     if request.method == 'POST':
         full_name = request.form.get('full_name', '').strip()
+        email = request.form.get('email', '').strip()
         mobile = request.form.get('mobile', '').strip()
-        college_name = request.form.get('college_name', '').strip()
-        username = request.form.get('username', '').strip() or mobile
-        password = request.form.get('password', '').strip()
-        confirm_password = request.form.get('confirm_password', '').strip()
+        college_name = request.form.get('college_name', '').strip() or 'Campus Resident'
+        
+        # User login credentials derived directly from student contact info
+        username = mobile
+        password = mobile
 
         # Meal selection options
         mess_type = request.form.get('mess_type', 'Veg')
         meal_preference = request.form.get('meal_preference', 'Both')
-        start_date_str = request.form.get('start_date', '').strip() or date.today().isoformat()
+        start_date_str = date.today().isoformat()
         
         try:
             plan_duration = int(request.form.get('plan_duration', 30))
-            base_fee = default_veg if mess_type == 'Veg' else default_nonveg
-            calc_fee = (base_fee / 30.0) * plan_duration
             if meal_preference in ('Lunch', 'Dinner'):
-                calc_fee = calc_fee * 0.6  # 40% reduction for single session
+                base_fee = default_veg_1time if mess_type == 'Veg' else default_nonveg_1time
+            else:
+                base_fee = default_veg if mess_type == 'Veg' else default_nonveg
+            calc_fee = (base_fee / 30.0) * plan_duration
             
             total_fee = float(request.form.get('total_fee', calc_fee))
             amount_paid = float(request.form.get('amount_paid', 0.0))
@@ -289,16 +342,11 @@ def register():
             return redirect(url_for('register'))
 
         payment_method = request.form.get('payment_method', 'UPI')
-        notes = request.form.get('notes', 'Initial student admission registration')
+        notes = request.form.get('notes', 'Online student self-registration')
 
-        # Validation checks
-        if not full_name or not mobile or not college_name or not password:
-            flash("Please complete all required fields (Name, Mobile, College, Password).", "danger")
-            conn.close()
-            return redirect(url_for('register'))
-
-        if password != confirm_password:
-            flash("Passwords do not match. Please verify and try again.", "danger")
+        # Validation checks: only student name, email id, and mobile number are required!
+        if not full_name or not mobile or not email:
+            flash("Please enter Student Full Name, Email ID, and Mobile Number.", "danger")
             conn.close()
             return redirect(url_for('register'))
 
@@ -307,29 +355,23 @@ def register():
             conn.close()
             return redirect(url_for('register'))
 
-        dup_user = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
-        if dup_user:
-            flash(f"The username '{username}' is already in use. Please select another.", "danger")
-            conn.close()
-            return redirect(url_for('register'))
-
         dup_stu = conn.execute("SELECT id FROM students WHERE mobile = ?", (mobile,)).fetchone()
         if dup_stu:
-            flash(f"A student account with mobile {mobile} already exists. Please sign in.", "warning")
+            flash(f"A student account with mobile {mobile} already exists. Please sign in directly with your mobile number.", "warning")
             conn.close()
             return redirect(url_for('login'))
 
         student_id = database.generate_student_id()
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        start_date = date.today()
         expiry_date = start_date + timedelta(days=plan_duration)
         expiry_date_str = expiry_date.isoformat()
 
         cursor = conn.cursor()
-        # 1. Insert student record
+        # 1. Insert student record with email
         cursor.execute("""
-            INSERT INTO students (student_id, full_name, mobile, college_name, mess_type, meal_preference, status, admission_date)
-            VALUES (?, ?, ?, ?, ?, ?, 'Active', ?)
-        """, (student_id, full_name, mobile, college_name, mess_type, meal_preference, start_date_str))
+            INSERT INTO students (student_id, full_name, mobile, email, college_name, mess_type, meal_preference, status, admission_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?)
+        """, (student_id, full_name, mobile, email, college_name, mess_type, meal_preference, start_date_str))
 
         # 2. Insert initial mess plan
         cursor.execute("""
@@ -348,18 +390,18 @@ def register():
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (receipt_no, student_id, plan_id, amount_paid, start_date_str, payment_method, notes))
 
-        # 4. Insert student user account
+        # 4. Insert student user account with mobile & email for quick user login
         hashed_pw = generate_password_hash(password)
         cursor.execute("""
-            INSERT INTO users (username, password_hash, full_name, role, student_id)
-            VALUES (?, ?, ?, 'student', ?)
-        """, (username, hashed_pw, full_name, student_id))
+            INSERT INTO users (username, email, password_hash, full_name, role, student_id)
+            VALUES (?, ?, ?, ?, 'student', ?)
+        """, (username, email, hashed_pw, full_name, student_id))
         new_user_id = cursor.lastrowid
 
         conn.commit()
         conn.close()
 
-        # Log in newly registered student
+        # Log in newly registered student directly
         session['user_id'] = new_user_id
         session['username'] = username
         session['full_name'] = full_name
@@ -367,13 +409,15 @@ def register():
         session['student_id'] = student_id
         session['auth_provider'] = 'local'
 
-        flash(f"Account created successfully! Welcome to MessMaster, {full_name} (ID: {student_id}).", "success")
+        flash(f"🎉 Welcome to MessMaster, {full_name}! Your {mess_type} dining pass is active (ID: {student_id}).", "success")
         return redirect(url_for('student_dashboard'))
 
     conn.close()
     return render_template('register.html',
         default_veg=default_veg,
         default_nonveg=default_nonveg,
+        default_veg_1time=default_veg_1time,
+        default_nonveg_1time=default_nonveg_1time,
         currency_symbol=currency_symbol,
         today_date=date.today().isoformat()
     )
@@ -417,61 +461,187 @@ def student_dashboard():
         college_name=college_name
     )
 
-# ----------------- QUICK QR CHECK-IN API ----------------- #
+# ----------------- QUICK QR CHECK-IN API & LIVE CAMERA SCANNER ----------------- #
 
 @app.route('/api/qr-checkin', methods=['POST'])
 @login_required
 def api_qr_checkin():
     data = request.get_json() or {}
+    qr_code = (data.get('qr_code') or '').strip()
     student_id = data.get('student_id')
-    meal_session = data.get('meal_session', 'Lunch')
+    meal_session = data.get('meal_session')
     today_str = date.today().isoformat()
+    current_hour = datetime.now().hour
+    auto_session = 'Lunch' if current_hour < 16 else 'Dinner'
 
+    # 1. Decode QR code string if provided from camera/image scanner
+    if qr_code:
+        # Check if scanning Mess Dining Hall Counter QR Code
+        # Formats: MESS-ATTENDANCE|CAMPUS-MESS|{DATE}|{SESSION} or MESS-CHECKIN|...
+        if qr_code.startswith('MESS-ATTENDANCE') or qr_code.startswith('MESS-CHECKIN') or 'CAMPUS-MESS' in qr_code:
+            parts = qr_code.split('|')
+            for part in parts:
+                p_upper = part.strip().upper()
+                if p_upper in ('LUNCH', 'DINNER'):
+                    meal_session = p_upper.capitalize()
+            if not meal_session:
+                meal_session = auto_session
+            # The scanning student is the currently logged-in student
+            if not student_id:
+                student_id = session.get('student_id')
+
+        # Check if scanning a Student Pass QR Code
+        # Format: MESS-PASS|{student_id}|{name}|{mess_type} or MESS-PASS|{student_id}|...
+        elif qr_code.startswith('MESS-PASS'):
+            parts = qr_code.split('|')
+            if len(parts) >= 2:
+                parsed_stu_id = parts[1].strip()
+                student_id = parsed_stu_id
+                if len(parts) >= 5:
+                    sess_cand = parts[4].strip().upper()
+                    if sess_cand in ('LUNCH', 'DINNER'):
+                        meal_session = sess_cand.capitalize()
+        # Direct Student ID entered or scanned
+        elif qr_code.upper().startswith('STU'):
+            student_id = qr_code.strip().upper()
+
+    # Fallback student_id and meal_session
     if not student_id:
         student_id = session.get('student_id')
+    if not meal_session:
+        meal_session = auto_session
 
     if not student_id:
-        return jsonify({'success': False, 'message': 'Student ID is required'}), 400
+        return jsonify({'success': False, 'message': 'Student ID could not be identified.'}), 400
 
     conn = database.get_db_connection()
-    student = conn.execute("SELECT full_name, status, mess_type FROM students WHERE student_id = ?", (student_id,)).fetchone()
+    student = conn.execute("SELECT * FROM students WHERE student_id = ?", (student_id,)).fetchone()
     if not student:
         conn.close()
-        return jsonify({'success': False, 'message': 'Student record not found'}), 404
+        return jsonify({'success': False, 'message': f'Student record {student_id} not found.'}), 404
 
-    if student['status'] == 'Expired':
+    # Fetch current plan details
+    current_plan = conn.execute("""
+        SELECT plan_duration_days, current_expiry_date, total_fee,
+               (julianday(current_expiry_date) - julianday(date('now'))) as remaining_days
+        FROM mess_plans 
+        WHERE student_id = ? AND is_current = 1
+    """, (student_id,)).fetchone()
+
+    exp_date = current_plan['current_expiry_date'] if current_plan else 'N/A'
+    rem_days = int(current_plan['remaining_days']) if current_plan and current_plan['remaining_days'] is not None else 0
+
+    # Check Plan Expiry
+    if student['status'] == 'Expired' or rem_days < 0:
         conn.close()
-        return jsonify({'success': False, 'message': f"Student plan has expired. Please renew plan before {meal_session} check-in."}), 400
+        return jsonify({
+            'success': False,
+            'message': f"❌ Cannot mark attendance: Mess subscription expired on {exp_date}. Please renew plan.",
+            'expired': True,
+            'student_id': student_id,
+            'student_name': student['full_name'],
+            'expiry_date': exp_date,
+            'remaining_days': rem_days
+        }), 400
 
     if student['status'] == 'Deactivated':
         conn.close()
-        return jsonify({'success': False, 'message': 'Student account is deactivated. Contact mess office.'}), 400
+        return jsonify({
+            'success': False,
+            'message': f"❌ Student account {student_id} is deactivated. Contact mess administration.",
+            'deactivated': True,
+            'student_id': student_id,
+            'student_name': student['full_name']
+        }), 400
 
-    # Record attendance safely
+    # Validate 1-Time Meal Plan
+    # meal_preference can be: 'Both', 'Lunch' (Morning), 'Dinner' (Night)
+    pref = student['meal_preference'] or 'Both'
+    if pref == 'Lunch' and meal_session.lower() == 'dinner':
+        conn.close()
+        return jsonify({
+            'success': False,
+            'message': f"⚠️ 1-Time Plan Restriction: {student['full_name']} is enrolled in 1-Time Morning (Lunch) only. Night (Dinner) is not included in this plan.",
+            'preference_mismatch': True,
+            'student_id': student_id,
+            'student_name': student['full_name'],
+            'mess_type': student['mess_type'],
+            'meal_preference': pref,
+            'expiry_date': exp_date,
+            'remaining_days': rem_days
+        }), 400
+
+    if pref == 'Dinner' and meal_session.lower() == 'lunch':
+        conn.close()
+        return jsonify({
+            'success': False,
+            'message': f"⚠️ 1-Time Plan Restriction: {student['full_name']} is enrolled in 1-Time Night (Dinner) only. Morning (Lunch) is not included in this plan.",
+            'preference_mismatch': True,
+            'student_id': student_id,
+            'student_name': student['full_name'],
+            'mess_type': student['mess_type'],
+            'meal_preference': pref,
+            'expiry_date': exp_date,
+            'remaining_days': rem_days
+        }), 400
+
     cursor = conn.cursor()
-    existing = cursor.execute("SELECT id FROM attendance WHERE student_id = ? AND date = ?", (student_id, today_str)).fetchone()
+    # Check if already marked for this meal session today
+    existing = cursor.execute("""
+        SELECT id, status, meal_session, created_at FROM attendance 
+        WHERE student_id = ? AND date = ? AND (meal_session = ? OR meal_session = 'All')
+    """, (student_id, today_str, meal_session)).fetchone()
+
+    scanner_user = session.get('username', 'qr-scanner')
+
+    if existing and existing['status'] == 'Present':
+        mark_time = existing['created_at']
+        conn.close()
+        return jsonify({
+            'success': True,
+            'already_marked': True,
+            'message': f"ℹ️ Already Checked In: {student['full_name']} was already marked Present for {meal_session} today ({mark_time}).",
+            'student_id': student_id,
+            'student_name': student['full_name'],
+            'mess_type': student['mess_type'],
+            'meal_preference': pref,
+            'meal_session': meal_session,
+            'date': today_str,
+            'status': 'Present',
+            'remaining_days': rem_days,
+            'expiry_date': exp_date
+        })
+
     if existing:
         cursor.execute("""
             UPDATE attendance 
             SET status = 'Present', meal_session = ?, marked_by = ?, created_at = CURRENT_TIMESTAMP
             WHERE id = ?
-        """, (meal_session, session.get('username', 'qr-scanner'), existing['id']))
+        """, (meal_session, scanner_user, existing['id']))
     else:
         cursor.execute("""
             INSERT INTO attendance (student_id, date, meal_session, status, marked_by)
             VALUES (?, ?, ?, 'Present', ?)
-        """, (student_id, today_str, meal_session, session.get('username', 'qr-scanner')))
+        """, (student_id, today_str, meal_session, scanner_user))
+
     conn.commit()
     conn.close()
 
+    session_label = "Morning / Lunch 🌞" if meal_session == 'Lunch' else "Night / Dinner 🌙"
+
     return jsonify({
         'success': True,
-        'message': f"Check-in verified for {student['full_name']} ({student['mess_type']} Mess - {meal_session})!",
+        'already_marked': False,
+        'message': f"🎉 Attendance Marked! {student['full_name']} verified Present for {session_label} on {today_str}.",
         'student_id': student_id,
         'student_name': student['full_name'],
+        'mess_type': student['mess_type'],
+        'meal_preference': pref,
         'meal_session': meal_session,
         'date': today_str,
-        'status': 'Present'
+        'status': 'Present',
+        'remaining_days': rem_days,
+        'expiry_date': exp_date
     })
 
 # ----------------- PUBLIC LANDING PAGE ----------------- #
@@ -604,18 +774,27 @@ def admission():
     conn = database.get_db_connection()
     default_veg = float(database.get_setting('veg_monthly_fee', '3200'))
     default_nonveg = float(database.get_setting('nonveg_monthly_fee', '4200'))
+    default_veg_1time = float(database.get_setting('veg_1time_monthly_fee', '1920'))
+    default_nonveg_1time = float(database.get_setting('nonveg_1time_monthly_fee', '2520'))
 
     if request.method == 'POST':
         full_name = request.form.get('full_name', '').strip()
         mobile = request.form.get('mobile', '').strip()
-        college_name = request.form.get('college_name', '').strip()
+        email = request.form.get('email', '').strip()
+        college_name = request.form.get('college_name', '').strip() or 'Campus Resident'
         admission_date_str = request.form.get('admission_date', '').strip() or date.today().isoformat()
         mess_start_date_str = request.form.get('mess_start_date', '').strip() or date.today().isoformat()
         mess_type = request.form.get('mess_type', 'Veg')
+        meal_preference = request.form.get('meal_preference', 'Both')
         
         try:
             plan_duration = int(request.form.get('plan_duration', 30))
-            total_fee = float(request.form.get('total_fee', default_veg if mess_type == 'Veg' else default_nonveg))
+            if meal_preference in ('Lunch', 'Dinner'):
+                default_calc = default_veg_1time if mess_type == 'Veg' else default_nonveg_1time
+            else:
+                default_calc = default_veg if mess_type == 'Veg' else default_nonveg
+            calc_fee = (default_calc / 30.0) * plan_duration
+            total_fee = float(request.form.get('total_fee', calc_fee))
             amount_paid = float(request.form.get('amount_paid', 0.0))
         except ValueError:
             flash("Invalid numbers provided for duration or fee.", "danger")
@@ -625,8 +804,8 @@ def admission():
         notes = request.form.get('notes', 'Admission payment')
 
         # Validations
-        if not full_name or not mobile or not college_name:
-            flash("Please fill in all required fields (Name, Mobile, College).", "danger")
+        if not full_name or not mobile:
+            flash("Please fill in Student Name and Mobile Number.", "danger")
             return redirect(url_for('admission'))
 
         if len(mobile) < 10:
@@ -655,9 +834,9 @@ def admission():
 
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO students (student_id, full_name, mobile, college_name, mess_type, status, admission_date)
-            VALUES (?, ?, ?, ?, ?, 'Active', ?)
-        """, (student_id, full_name, mobile, college_name, mess_type, admission_date_str))
+            INSERT INTO students (student_id, full_name, mobile, email, college_name, mess_type, meal_preference, status, admission_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?)
+        """, (student_id, full_name, mobile, email, college_name, mess_type, meal_preference, admission_date_str))
 
         cursor.execute("""
             INSERT INTO mess_plans (
@@ -677,6 +856,12 @@ def admission():
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (receipt_no, student_id, plan_id, amount_paid, admission_date_str, payment_method, notes))
 
+        # Create user account for student with mobile & email for instant login
+        cursor.execute("""
+            INSERT OR IGNORE INTO users (username, email, password_hash, full_name, role, student_id)
+            VALUES (?, ?, ?, ?, 'student', ?)
+        """, (mobile, email, generate_password_hash(mobile), full_name, student_id))
+
         conn.commit()
         conn.close()
 
@@ -690,7 +875,9 @@ def admission():
     return render_template('admission.html',
         next_student_id=next_student_id,
         default_veg_fee=default_veg,
-        default_nonveg_fee=default_nonveg
+        default_nonveg_fee=default_nonveg,
+        default_veg_1time_fee=default_veg_1time,
+        default_nonveg_1time_fee=default_nonveg_1time
     )
 
 # ----------------- ALL STUDENTS MANAGEMENT ----------------- #
@@ -868,6 +1055,7 @@ def edit_student(student_id):
     mobile = request.form.get('mobile', '').strip()
     college_name = request.form.get('college_name', '').strip()
     mess_type = request.form.get('mess_type', 'Veg')
+    meal_preference = request.form.get('meal_preference', 'Both')
 
     if not full_name or not mobile or not college_name:
         flash("All fields are required.", "danger")
@@ -883,9 +1071,9 @@ def edit_student(student_id):
 
     conn.execute("""
         UPDATE students 
-        SET full_name = ?, mobile = ?, college_name = ?, mess_type = ?, updated_at = CURRENT_TIMESTAMP
+        SET full_name = ?, mobile = ?, college_name = ?, mess_type = ?, meal_preference = ?, updated_at = CURRENT_TIMESTAMP
         WHERE student_id = ?
-    """, (full_name, mobile, college_name, mess_type, student_id))
+    """, (full_name, mobile, college_name, mess_type, meal_preference, student_id))
     
     # Also update current plan mess_type if active
     conn.execute("""
@@ -968,12 +1156,20 @@ def renew_mess_plan(student_id):
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (receipt_no, student_id, new_plan_id, amount_paid, start_date_str, payment_method, notes))
 
-    # Set student to Active
-    cursor.execute("""
-        UPDATE students 
-        SET status = 'Active', mess_type = ?, updated_at = CURRENT_TIMESTAMP 
-        WHERE student_id = ?
-    """, (mess_type, student_id))
+    # Set student to Active and update meal preference if selected
+    meal_preference = request.form.get('meal_preference')
+    if meal_preference:
+        cursor.execute("""
+            UPDATE students 
+            SET status = 'Active', mess_type = ?, meal_preference = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE student_id = ?
+        """, (mess_type, meal_preference, student_id))
+    else:
+        cursor.execute("""
+            UPDATE students 
+            SET status = 'Active', mess_type = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE student_id = ?
+        """, (mess_type, student_id))
 
     conn.commit()
     conn.close()
@@ -1133,9 +1329,9 @@ def attendance():
                 student_id = key.replace('att_status_', '')
                 att_status = 'Present' if val == 'Present' else 'Absent'
                 cursor.execute("""
-                    INSERT INTO attendance (student_id, date, status, marked_by)
-                    VALUES (?, ?, ?, 'admin')
-                    ON CONFLICT(student_id, date) DO UPDATE SET 
+                    INSERT INTO attendance (student_id, date, meal_session, status, marked_by)
+                    VALUES (?, ?, 'All', ?, 'admin')
+                    ON CONFLICT(student_id, date, meal_session) DO UPDATE SET 
                         status = excluded.status,
                         created_at = CURRENT_TIMESTAMP
                 """, (student_id, date_to_save, att_status))
@@ -1148,8 +1344,8 @@ def attendance():
 
     # Query active students and their attendance status on selected date
     query = """
-        SELECT s.student_id, s.full_name, s.mobile, s.college_name, s.mess_type, s.status as student_status,
-               COALESCE(a.status, 'Unmarked') as attendance_status
+        SELECT s.student_id, s.full_name, s.mobile, s.college_name, s.mess_type, s.meal_preference, s.status as student_status,
+               COALESCE(a.status, 'Unmarked') as attendance_status, a.meal_session
         FROM students s
         LEFT JOIN attendance a ON s.student_id = a.student_id AND a.date = ?
         WHERE s.status IN ('Active', 'Expired')
@@ -1184,13 +1380,21 @@ def attendance():
 
     conn.close()
 
+    counter_qr_lunch = f"MESS-ATTENDANCE|CAMPUS-MESS|{selected_date}|LUNCH"
+    counter_qr_dinner = f"MESS-ATTENDANCE|CAMPUS-MESS|{selected_date}|DINNER"
+    current_session = 'Lunch' if datetime.now().hour < 16 else 'Dinner'
+
     return render_template('attendance.html',
         selected_date=selected_date,
         mess_filter=mess_filter,
         search=search,
         students=students_attendance,
         total_active=total_active,
-        summary=summary_row
+        summary=summary_row,
+        counter_qr_lunch=counter_qr_lunch,
+        counter_qr_dinner=counter_qr_dinner,
+        current_meal_session=current_session,
+        mess_name=database.get_setting('mess_name', 'Campus Dining Facility')
     )
 
 # ----------------- ABSENT-DAY ADJUSTMENTS ----------------- #
@@ -1695,6 +1899,8 @@ def settings():
             database.update_setting('absent_threshold_days', request.form.get('absent_threshold_days', '3').strip())
             database.update_setting('veg_monthly_fee', request.form.get('veg_monthly_fee', '3200').strip())
             database.update_setting('nonveg_monthly_fee', request.form.get('nonveg_monthly_fee', '4200').strip())
+            database.update_setting('veg_1time_monthly_fee', request.form.get('veg_1time_monthly_fee', '1920').strip())
+            database.update_setting('nonveg_1time_monthly_fee', request.form.get('nonveg_1time_monthly_fee', '2520').strip())
             database.update_setting('currency_symbol', request.form.get('currency_symbol', '₹').strip())
             database.update_setting('contact_phone', request.form.get('contact_phone', '').strip())
             database.update_setting('contact_email', request.form.get('contact_email', '').strip())
@@ -1771,14 +1977,15 @@ def api_quick_mark_attendance():
     att_date = data.get('date', date.today().isoformat())
     status = data.get('status', 'Present')
 
+    meal_session = data.get('meal_session', 'All')
     conn = database.get_db_connection()
     conn.execute("""
-        INSERT INTO attendance (student_id, date, status, marked_by)
-        VALUES (?, ?, ?, 'admin')
-        ON CONFLICT(student_id, date) DO UPDATE SET 
+        INSERT INTO attendance (student_id, date, meal_session, status, marked_by)
+        VALUES (?, ?, ?, ?, 'admin')
+        ON CONFLICT(student_id, date, meal_session) DO UPDATE SET 
             status = excluded.status,
             created_at = CURRENT_TIMESTAMP
-    """, (student_id, att_date, status))
+    """, (student_id, att_date, meal_session, status))
     conn.commit()
     conn.close()
 

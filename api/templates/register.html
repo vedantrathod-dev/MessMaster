@@ -165,13 +165,18 @@
 
       <form action="{{ url_for('register') }}" method="POST" id="registerForm">
         
-        <!-- SECTION 1: Personal Details -->
-        <div class="section-divider"><span>1. Personal Information</span></div>
+        <!-- SECTION 1: Student Information -->
+        <div class="section-divider"><span>1. Student Information</span></div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="full_name">Student Full Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="full_name" id="full_name" placeholder="e.g. Aryan Sharma" required autofocus>
+        </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="full_name">Full Name <span class="required">*</span></label>
-            <input type="text" class="form-control" name="full_name" id="full_name" placeholder="e.g. Aryan Sharma" required autofocus>
+            <label class="form-label" for="email">Email ID <span class="required">*</span></label>
+            <input type="email" class="form-control" name="email" id="email" placeholder="e.g. aryan@gmail.com" required>
           </div>
           <div class="form-group">
             <label class="form-label" for="mobile">Mobile Number (10 digits) <span class="required">*</span></label>
@@ -179,38 +184,15 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="college_name">College / Institute Name <span class="required">*</span></label>
-          <input type="text" class="form-control" name="college_name" id="college_name" placeholder="e.g. College of Engineering" required>
-        </div>
-
-        <!-- SECTION 2: Account Login Credentials -->
-        <div class="section-divider"><span>2. Account Login</span></div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="username">Username / ID <span class="required">*</span></label>
-            <input type="text" class="form-control" name="username" id="username" placeholder="Choose a username" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="start_date">Mess Start Date <span class="required">*</span></label>
-            <input type="date" class="form-control" name="start_date" id="start_date" value="{{ today_date }}" required>
+        <div style="font-size: 12.5px; color: #38bdf8; margin-bottom: 18px; background: rgba(56, 189, 248, 0.08); padding: 10px 14px; border-radius: var(--radius-sm); border-left: 3px solid #38bdf8; display: flex; align-items: center; gap: 8px;">
+          <span>💡</span>
+          <div>
+            <strong>Instant User Login:</strong> You will use your <strong>Mobile Number</strong> or <strong>Email ID</strong> to log into your Student Dashboard anytime!
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="password">Password <span class="required">*</span></label>
-            <input type="password" class="form-control" name="password" id="password" placeholder="At least 6 characters" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="confirm_password">Confirm Password <span class="required">*</span></label>
-            <input type="password" class="form-control" name="confirm_password" id="confirm_password" placeholder="Re-type password" required>
-          </div>
-        </div>
-
-        <!-- SECTION 3: Meal Plan Selection (User Requirement) -->
-        <div class="section-divider"><span>3. Choose Your Meal Plan</span></div>
+        <!-- SECTION 2: Meal Plan Selection -->
+        <div class="section-divider"><span>2. Choose Your Meal Plan</span></div>
 
         <label class="form-label">Select Mess Type <span class="required">*</span></label>
         <div class="plan-selector-grid">
@@ -231,11 +213,11 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="meal_preference">Meal Sessions <span class="required">*</span></label>
+            <label class="form-label" for="meal_preference">Meal Sessions / Preference <span class="required">*</span></label>
             <select class="form-control form-select" name="meal_preference" id="meal_preference" onchange="calculateFee()" required>
-              <option value="Both" selected>🌞 Lunch & 🌙 Dinner (Full Plan)</option>
-              <option value="Lunch">🌞 Lunch Only (Single Session)</option>
-              <option value="Dinner">🌙 Dinner Only (Single Session)</option>
+              <option value="Both" selected>⭐ Both: Morning & Night (Lunch & Dinner - Full Plan)</option>
+              <option value="Lunch">🌞 1 Time: Morning / Lunch Only (1 Month / 30 Days)</option>
+              <option value="Dinner">🌙 1 Time: Night / Dinner Only (1 Month / 30 Days)</option>
             </select>
           </div>
 
@@ -254,15 +236,15 @@
           <div>
             <div class="calc-title">Total Mess Plan Fee</div>
             <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;" id="feeBreakdownText">
-              30 Days Pure Veg Plan (Lunch & Dinner)
+              30 Days Pure Veg Plan (Both Morning & Night)
             </div>
           </div>
           <div class="calc-amount">{{ currency_symbol }}<span id="calculatedFeeDisplay">{{ "%.2f"|format(default_veg) }}</span></div>
           <input type="hidden" name="total_fee" id="hiddenTotalFee" value="{{ default_veg }}">
         </div>
 
-        <!-- SECTION 4: Initial Deposit / Payment -->
-        <div class="section-divider"><span>4. Payment & Deposit</span></div>
+        <!-- SECTION 3: Initial Deposit / Payment -->
+        <div class="section-divider"><span>3. Payment & Deposit</span></div>
 
         <div class="form-row">
           <div class="form-group">
@@ -299,6 +281,8 @@
   <script>
     const defaultVegRate = {{ default_veg }};
     const defaultNonVegRate = {{ default_nonveg }};
+    const defaultVeg1Time = {{ default_veg_1time }};
+    const defaultNonVeg1Time = {{ default_nonveg_1time }};
     const currency = "{{ currency_symbol }}";
 
     let selectedMess = "Veg";
@@ -316,32 +300,29 @@
     function calculateFee() {
       const duration = parseInt(document.getElementById('plan_duration').value) || 30;
       const mealPref = document.getElementById('meal_preference').value;
-      const baseMonthly = (selectedMess === 'Veg') ? defaultVegRate : defaultNonVegRate;
-
-      let total = (baseMonthly / 30.0) * duration;
-      if (mealPref === 'Lunch' || mealPref === 'Dinner') {
-        total = total * 0.6; // single session discount
+      
+      let baseMonthly = 0;
+      if (mealPref === 'Both') {
+        baseMonthly = (selectedMess === 'Veg') ? defaultVegRate : defaultNonVegRate;
+      } else {
+        baseMonthly = (selectedMess === 'Veg') ? defaultVeg1Time : defaultNonVeg1Time;
       }
 
+      const total = (baseMonthly / 30.0) * duration;
       const totalFormatted = total.toFixed(2);
       document.getElementById('calculatedFeeDisplay').textContent = totalFormatted;
       document.getElementById('hiddenTotalFee').value = totalFormatted;
       
-      const prefText = mealPref === 'Both' ? 'Lunch & Dinner' : (mealPref + ' Only');
+      let prefText = 'Both Morning & Night';
+      if (mealPref === 'Lunch') prefText = '1 Time (Morning / Lunch Only)';
+      if (mealPref === 'Dinner') prefText = '1 Time (Night / Dinner Only)';
+
       document.getElementById('feeBreakdownText').textContent = `${duration} Days ${selectedMess} Plan (${prefText})`;
 
       const amountPaidInput = document.getElementById('amount_paid');
       amountPaidInput.value = totalFormatted;
       amountPaidInput.max = totalFormatted;
     }
-
-    // Auto fill username from mobile if left blank
-    document.getElementById('mobile').addEventListener('input', function(e) {
-      const usernameInput = document.getElementById('username');
-      if (!usernameInput.value || usernameInput.value.startsWith('9')) {
-        usernameInput.value = e.target.value;
-      }
-    });
   </script>
 </body>
 </html>

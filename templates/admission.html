@@ -6,6 +6,8 @@
 {% block content %}
 <input type="hidden" id="vegDefaultFee" value="{{ default_veg_fee }}">
 <input type="hidden" id="nonvegDefaultFee" value="{{ default_nonveg_fee }}">
+<input type="hidden" id="veg1TimeDefaultFee" value="{{ default_veg_1time_fee }}">
+<input type="hidden" id="nonveg1TimeDefaultFee" value="{{ default_nonveg_1time_fee }}">
 
 <div style="max-width: 900px; margin: 0 auto;">
   <div class="panel">
@@ -38,13 +40,19 @@
           <div class="form-group">
             <label class="form-label" for="mobile">Mobile Number <span class="required">*</span></label>
             <input type="tel" class="form-control" name="mobile" id="mobile" placeholder="e.g. 9876543210" pattern="[0-9]{10}" required>
-            <div class="form-helper">10-digit mobile number (used for unique identification)</div>
+            <div class="form-helper">10-digit mobile number (used for login & identification)</div>
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="college_name">College / Department Name <span class="required">*</span></label>
-            <input type="text" class="form-control" name="college_name" id="college_name" value="{{ college_name }}" required>
+            <label class="form-label" for="email">Email ID</label>
+            <input type="email" class="form-control" name="email" id="email" placeholder="e.g. student@gmail.com">
+            <div class="form-helper">Optional email for student login & receipts</div>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="college_name">College / Department Name <span class="required">*</span></label>
+          <input type="text" class="form-control" name="college_name" id="college_name" value="{{ college_name }}" required>
         </div>
 
         <div class="form-row">
@@ -69,11 +77,23 @@
           <div class="form-group">
             <label class="form-label" for="messType">Mess Dining Type <span class="required">*</span></label>
             <select class="form-control form-select" name="mess_type" id="messType" required>
-              <option value="Veg" selected>Pure Veg Mess ({{ currency_symbol }}{{ default_veg_fee }}/month)</option>
-              <option value="Non-Veg">Non-Veg Mess ({{ currency_symbol }}{{ default_nonveg_fee }}/month)</option>
+              <option value="Veg" selected>🥗 Pure Veg Mess</option>
+              <option value="Non-Veg">🍗 Non-Veg Mess</option>
             </select>
           </div>
 
+          <div class="form-group">
+            <label class="form-label" for="mealPreference">Meal Session / Time <span class="required">*</span></label>
+            <select class="form-control form-select" name="meal_preference" id="mealPreference" required>
+              <option value="Both" selected>⭐ Both: Morning & Night (Lunch & Dinner)</option>
+              <option value="Lunch">🌞 1 Time: Morning / Lunch Only (1 Month / 30 Days)</option>
+              <option value="Dinner">🌙 1 Time: Night / Dinner Only (1 Month / 30 Days)</option>
+            </select>
+            <div class="form-helper">Choose 1-Time (Morning/Lunch or Night/Dinner) or Both</div>
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="planDuration">Mess Plan Duration (Days) <span class="required">*</span></label>
             <select class="form-control form-select" name="plan_duration" id="planDuration" required>
@@ -94,7 +114,7 @@
             </div>
             <div>
               <span style="color: var(--text-secondary); font-size: 12px; font-weight: 600; display: block;">TOTAL MESS CHARGES</span>
-              <strong style="font-size: 18px; color: var(--text-primary);">{{ currency_symbol }}<span id="totalFeePreview">3200.00</span></strong>
+              <strong style="font-size: 18px; color: var(--text-primary);">{{ currency_symbol }}<span id="totalFeePreview">{{ "%.2f"|format(default_veg_fee) }}</span></strong>
             </div>
             <div>
               <span style="color: var(--text-secondary); font-size: 12px; font-weight: 600; display: block;">OUTSTANDING BALANCE</span>
@@ -152,7 +172,47 @@
 
 {% block scripts %}
 <script>
-  // Sync the display span with the input
+  const vegDefault = parseFloat(document.getElementById('vegDefaultFee')?.value || 3200);
+  const nonvegDefault = parseFloat(document.getElementById('nonvegDefaultFee')?.value || 4200);
+  const veg1TimeDefault = parseFloat(document.getElementById('veg1TimeDefaultFee')?.value || 1920);
+  const nonveg1TimeDefault = parseFloat(document.getElementById('nonveg1TimeDefaultFee')?.value || 2520);
+
+  function recalcAdmissionFee() {
+    const messType = document.getElementById('messType').value;
+    const pref = document.getElementById('mealPreference').value;
+    const duration = parseInt(document.getElementById('planDuration').value || 30, 10);
+    const ratio = duration / 30.0;
+
+    let monthlyRate = 0;
+    if (pref === 'Both') {
+      monthlyRate = messType === 'Veg' ? vegDefault : nonvegDefault;
+    } else {
+      monthlyRate = messType === 'Veg' ? veg1TimeDefault : nonveg1TimeDefault;
+    }
+
+    const calculated = (monthlyRate * ratio).toFixed(2);
+    const totalFeeInput = document.getElementById('totalFee');
+    const amountPaidInput = document.getElementById('amountPaid');
+    const totalFeePreview = document.getElementById('totalFeePreview');
+    const balancePreview = document.getElementById('balancePreview');
+
+    if (totalFeeInput) {
+      totalFeeInput.value = calculated;
+      if (totalFeePreview) totalFeePreview.textContent = calculated;
+    }
+    if (amountPaidInput) {
+      amountPaidInput.value = calculated;
+    }
+    if (balancePreview) {
+      balancePreview.textContent = "0.00";
+    }
+  }
+
+  document.getElementById('messType').addEventListener('change', recalcAdmissionFee);
+  document.getElementById('mealPreference').addEventListener('change', recalcAdmissionFee);
+  document.getElementById('planDuration').addEventListener('change', recalcAdmissionFee);
+
+  // Sync totalFee input changes
   document.getElementById('totalFee').addEventListener('input', function() {
     document.getElementById('totalFeePreview').textContent = parseFloat(this.value || 0).toFixed(2);
   });

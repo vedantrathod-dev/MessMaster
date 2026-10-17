@@ -65,7 +65,17 @@ def init_db(seed_sample=False):
         pass
 
     try:
+        cursor.execute("ALTER TABLE users ADD COLUMN email TEXT;")
+    except Exception:
+        pass
+
+    try:
         cursor.execute("ALTER TABLE students ADD COLUMN meal_preference TEXT DEFAULT 'Both';")
+    except Exception:
+        pass
+
+    try:
+        cursor.execute("ALTER TABLE students ADD COLUMN email TEXT;")
     except Exception:
         pass
 
@@ -73,6 +83,32 @@ def init_db(seed_sample=False):
         cursor.execute("ALTER TABLE attendance ADD COLUMN meal_session TEXT DEFAULT 'All';")
     except Exception:
         pass
+
+    # Migrate attendance table to UNIQUE(student_id, date, meal_session) if old UNIQUE(student_id, date) exists
+    try:
+        att_sql_row = cursor.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='attendance'").fetchone()
+        if att_sql_row and "UNIQUE(student_id, date)" in att_sql_row[0]:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS attendance_migrated (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    student_id TEXT NOT NULL,
+                    date DATE NOT NULL,
+                    meal_session TEXT DEFAULT 'All',
+                    status TEXT NOT NULL CHECK(status IN ('Present', 'Absent')),
+                    marked_by TEXT DEFAULT 'admin',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(student_id, date, meal_session),
+                    FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+                );
+            """)
+            cursor.execute("""
+                INSERT OR IGNORE INTO attendance_migrated (id, student_id, date, meal_session, status, marked_by, created_at)
+                SELECT id, student_id, date, COALESCE(meal_session, 'All'), status, marked_by, created_at FROM attendance;
+            """)
+            cursor.execute("DROP TABLE attendance;")
+            cursor.execute("ALTER TABLE attendance_migrated RENAME TO attendance;")
+    except Exception as e:
+        print(f"Attendance migration notice: {e}")
 
     # 2. Settings table
     cursor.execute("""
@@ -91,6 +127,7 @@ def init_db(seed_sample=False):
             student_id TEXT UNIQUE NOT NULL,
             full_name TEXT NOT NULL,
             mobile TEXT UNIQUE NOT NULL,
+            email TEXT,
             college_name TEXT NOT NULL,
             mess_type TEXT NOT NULL CHECK(mess_type IN ('Veg', 'Non-Veg')),
             meal_preference TEXT NOT NULL DEFAULT 'Both' CHECK(meal_preference IN ('Both', 'Lunch', 'Dinner')),
@@ -198,8 +235,10 @@ def init_db(seed_sample=False):
         ('mess_name', 'Campus Royal Mess & Dining Hall', 'Name of the mess facility'),
         ('college_name', 'Engineering & Technology Campus', 'Affiliated college/institution'),
         ('absent_threshold_days', '3', 'Minimum consecutive absent days required for extension approval (e.g. 3 or 4)'),
-        ('veg_monthly_fee', '3200', 'Standard 30-day fee for Pure Veg Mess'),
-        ('nonveg_monthly_fee', '4200', 'Standard 30-day fee for Non-Veg Mess'),
+        ('veg_monthly_fee', '3200', 'Standard 30-day fee for Pure Veg Mess (Both Meals)'),
+        ('nonveg_monthly_fee', '4200', 'Standard 30-day fee for Non-Veg Mess (Both Meals)'),
+        ('veg_1time_monthly_fee', '1920', 'Standard 30-day fee for 1-Time Pure Veg Mess (Morning or Night)'),
+        ('nonveg_1time_monthly_fee', '2520', 'Standard 30-day fee for 1-Time Non-Veg Mess (Morning or Night)'),
         ('currency_symbol', '₹', 'Currency symbol for monetary displays'),
         ('contact_phone', '+91 98765 43210', 'Mess admin contact phone number'),
         ('contact_email', 'mess-admin@campus.edu', 'Mess admin official email')
@@ -737,8 +776,11 @@ def get_student_dashboard_data(student_id):
         "today_dinner": dict(today_att_dinner) if today_att_dinner else None,
         "adjustments": [dict(a) for a in adjustments],
         "today_date": today_str,
-        "qr_lunch_data": f"MESS-PASS|{student_id}|{student['full_name']}|{student['mess_type']}|LUNCH|{today_str}",
-        "qr_dinner_data": f"MESS-PASS|{student_id}|{student['full_name']}|{student['mess_type']}|DINNER|{today_str}"
+        "student_qr_pass": f"MESS-PASS|{student_id}|{student['full_name']}|{student['mess_type']}",
+        "current_meal_session": 'Lunch' if datetime.now().hour < 16 else 'Dinner',
+        "mess_counter_qr_lunch": f"MESS-ATTENDANCE|CAMPUS-MESS|{today_str}|LUNCH",
+        "mess_counter_qr_dinner": f"MESS-ATTENDANCE|CAMPUS-MESS|{today_str}|DINNER",
+        "mess_counter_qr_current": f"MESS-ATTENDANCE|CAMPUS-MESS|{today_str}|{'LUNCH' if datetime.now().hour < 16 else 'DINNER'}"
     }
 
 if __name__ == '__main__':

@@ -60,12 +60,23 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="set_veg_fee">Veg Monthly Fee ({{ settings.currency_symbol }})</label>
+            <label class="form-label" for="set_veg_fee">Full Veg Monthly Fee (Both Meals) ({{ settings.currency_symbol }})</label>
             <input type="number" step="0.01" class="form-control" name="veg_monthly_fee" id="set_veg_fee" value="{{ settings.veg_monthly_fee }}" required>
           </div>
           <div class="form-group">
-            <label class="form-label" for="set_nonveg_fee">Non-Veg Monthly Fee ({{ settings.currency_symbol }})</label>
+            <label class="form-label" for="set_nonveg_fee">Full Non-Veg Monthly Fee (Both Meals) ({{ settings.currency_symbol }})</label>
             <input type="number" step="0.01" class="form-control" name="nonveg_monthly_fee" id="set_nonveg_fee" value="{{ settings.nonveg_monthly_fee }}" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="set_veg_1time_fee">1-Time Veg Monthly Fee (Morning or Night) ({{ settings.currency_symbol }})</label>
+            <input type="number" step="0.01" class="form-control" name="veg_1time_monthly_fee" id="set_veg_1time_fee" value="{{ settings.veg_1time_monthly_fee or '1920' }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="set_nonveg_1time_fee">1-Time Non-Veg Monthly Fee (Morning or Night) ({{ settings.currency_symbol }})</label>
+            <input type="number" step="0.01" class="form-control" name="nonveg_1time_monthly_fee" id="set_nonveg_1time_fee" value="{{ settings.nonveg_1time_monthly_fee or '2520' }}" required>
           </div>
         </div>
 

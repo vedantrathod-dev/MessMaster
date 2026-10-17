@@ -54,7 +54,7 @@
 
           <a href="#qrPassesSection" class="student-nav-item" id="nav-qr-pass" onclick="scrollToSection(event, 'qrPassesSection')">
             <span class="student-nav-icon">🎫</span>
-            <span>Lunch &amp; Dinner QR</span>
+            <span>My Dining Pass</span>
           </a>
 
           <a href="#financialSection" class="student-nav-item" id="nav-my-payments" onclick="scrollToSection(event, 'financialSection')">
@@ -203,7 +203,14 @@
           <a href="{{ url_for('attendance') }}" class="nav-item {% if request.endpoint == 'attendance' %}active{% endif %}" id="nav-attendance">
             <div class="nav-item-content">
               <span class="icon">📅</span>
-              <span>Attendance</span>
+              <span>Attendance Tracker</span>
+            </div>
+          </a>
+
+          <a href="{{ url_for('student_dashboard') }}" class="nav-item {% if request.endpoint == 'student_dashboard' %}active{% endif %}" id="nav-scanner-portal">
+            <div class="nav-item-content">
+              <span class="icon">📷</span>
+              <span>QR Attendance & Passes</span>
             </div>
           </a>
 
@@ -421,45 +428,53 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Mess Type</label>
-              <select class="form-control form-select" name="mess_type" id="renewMessType" required>
+              <select class="form-control form-select" name="mess_type" id="renewMessType" onchange="recalcRenewFee()" required>
                 <option value="Veg">Pure Veg Mess</option>
                 <option value="Non-Veg">Non-Veg Mess</option>
               </select>
             </div>
             <div class="form-group">
+              <label class="form-label">Meal Session / Preference</label>
+              <select class="form-control form-select" name="meal_preference" id="renewMealPreference" onchange="recalcRenewFee()" required>
+                <option value="Both">⭐ Both: Morning & Night</option>
+                <option value="Lunch">🌞 1 Time: Morning / Lunch Only</option>
+                <option value="Dinner">🌙 1 Time: Night / Dinner Only</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
               <label class="form-label">Renewal Duration</label>
-              <select class="form-control form-select" name="duration_days" id="renewDuration" required>
+              <select class="form-control form-select" name="duration_days" id="renewDuration" onchange="recalcRenewFee()" required>
                 <option value="30" selected>30 Days (1 Month)</option>
                 <option value="60">60 Days (2 Months)</option>
                 <option value="90">90 Days (Quarterly)</option>
                 <option value="180">180 Days (Semester)</option>
               </select>
             </div>
-          </div>
-          <div class="form-row">
             <div class="form-group">
               <label class="form-label">Renewal Start Date</label>
               <input type="date" class="form-control" name="start_date" id="renewStartDate" value="{{ today_date }}" required>
             </div>
-            <div class="form-group">
-              <label class="form-label">Total Fee ({{ currency_symbol }})</label>
-              <input type="number" step="0.01" class="form-control" name="fee" id="renewFee" value="3200" required>
-            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label">Amount Paid Now ({{ currency_symbol }})</label>
-              <input type="number" step="0.01" min="0" class="form-control" name="amount_paid" id="renewAmountPaid" value="3200">
+              <label class="form-label">Total Fee ({{ currency_symbol }})</label>
+              <input type="number" step="0.01" class="form-control" name="fee" id="renewFee" value="{{ veg_monthly_fee }}" required>
             </div>
             <div class="form-group">
-              <label class="form-label">Payment Method</label>
-              <select class="form-control form-select" name="payment_method">
-                <option value="UPI">UPI</option>
-                <option value="Cash">Cash</option>
-                <option value="Credit/Debit Card">Card</option>
-                <option value="Net Banking">Net Banking</option>
-              </select>
+              <label class="form-label">Amount Paid Now ({{ currency_symbol }})</label>
+              <input type="number" step="0.01" min="0" class="form-control" name="amount_paid" id="renewAmountPaid" value="{{ veg_monthly_fee }}">
             </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select class="form-control form-select" name="payment_method">
+              <option value="UPI">UPI / QR Code</option>
+              <option value="Cash">Cash</option>
+              <option value="Credit/Debit Card">Card</option>
+              <option value="Net Banking">Net Banking</option>
+            </select>
           </div>
         </div>
         <div class="modal-footer">
@@ -473,14 +488,37 @@
   <!-- JavaScript Bundle -->
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
   <script>
+    function recalcRenewFee() {
+      const type = document.getElementById('renewMessType').value;
+      const pref = document.getElementById('renewMealPreference').value;
+      const dur = parseInt(document.getElementById('renewDuration').value || 30, 10);
+      const ratio = dur / 30.0;
+      const vegRate = {{ veg_monthly_fee }};
+      const nonvegRate = {{ nonveg_monthly_fee }};
+      const veg1Time = {{ veg_1time_monthly_fee }};
+      const nonveg1Time = {{ nonveg_1time_monthly_fee }};
+
+      let monthly = (pref === 'Both') ? (type === 'Veg' ? vegRate : nonvegRate) : (type === 'Veg' ? veg1Time : nonveg1Time);
+      const total = (monthly * ratio).toFixed(2);
+      const feeInput = document.getElementById('renewFee');
+      const paidInput = document.getElementById('renewAmountPaid');
+      if (feeInput) feeInput.value = total;
+      if (paidInput) paidInput.value = total;
+    }
+
     // Dynamically adjust renew form action URL when opening modal
     const originalPopulate = window.populateRenewModal;
-    window.populateRenewModal = function(studentId, studentName, messType) {
+    window.populateRenewModal = function(studentId, studentName, messType, mealPref) {
       const form = document.getElementById('renewForm');
       if (form) {
         form.action = `/student/${studentId}/renew`;
       }
-      originalPopulate(studentId, studentName, messType);
+      if (originalPopulate) originalPopulate(studentId, studentName, messType);
+      const prefSelect = document.getElementById('renewMealPreference');
+      if (prefSelect && mealPref) {
+        prefSelect.value = mealPref;
+      }
+      recalcRenewFee();
     };
   </script>
   {% block scripts %}{% endblock %}

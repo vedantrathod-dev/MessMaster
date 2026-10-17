@@ -51,7 +51,13 @@
       </div>
 
       <!-- Bulk Selection Helpers -->
-      <div style="display: flex; gap: 10px;">
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="{{ url_for('dashboard') }}#adminCounterScannerCard" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 700;">
+          📷 Live Counter Scanner
+        </a>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="openModal('messCounterQrModal')">
+          📢 Display Counter QR
+        </button>
         <button type="button" class="btn btn-success btn-sm" id="btnMarkAllPresent">
           ✓ Mark All Present
         </button>
@@ -90,9 +96,24 @@
                     <div style="font-size: 11px; color: var(--text-muted);">{{ s.college_name }} &bull; {{ s.mobile }}</div>
                   </td>
                   <td>
-                    <span class="badge {% if s.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
-                      {{ s.mess_type }}
-                    </span>
+                    <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+                      <span class="badge {% if s.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
+                        {{ s.mess_type }}
+                      </span>
+                      {% if s.meal_preference == 'Lunch' %}
+                        <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); font-size: 11px;">
+                          🌞 Morning Only
+                        </span>
+                      {% elif s.meal_preference == 'Dinner' %}
+                        <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 11px;">
+                          🌙 Night Only
+                        </span>
+                      {% else %}
+                        <span class="badge" style="background: rgba(56, 189, 248, 0.12); color: #38bdf8; font-size: 11px;">
+                          ⭐ Both Meals
+                        </span>
+                      {% endif %}
+                    </div>
                   </td>
                   <td>
                     {% if s.student_status == 'Active' %}
@@ -141,4 +162,136 @@
     </div>
   </div>
 </form>
+
+<!-- MESS COUNTER QR CODE DISPLAY MODAL -->
+<div class="modal" id="messCounterQrModal">
+  <div class="modal-dialog" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+        <span>📢</span> Dining Hall Counter QR Code
+      </h3>
+      <button class="modal-close" onclick="closeModal('messCounterQrModal')">&times;</button>
+    </div>
+    <div class="modal-body" style="text-align: center; padding: 24px;">
+      <p style="font-size: 13.5px; color: var(--text-secondary); margin-bottom: 16px;">
+        Display this official QR Code on a screen at the dining hall entrance, or print it out for the food serving counter. Students scan it from their dashboard to automatically mark their attendance!
+      </p>
+
+      <!-- Active Session Selector Tabs inside Modal -->
+      <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 18px;">
+        <button id="counterModalTabLunch" type="button" class="btn btn-sm {% if current_meal_session == 'Lunch' %}btn-primary{% else %}btn-outline{% endif %}" onclick="switchCounterQr('Lunch')">
+          🌞 Lunch QR (12:00 PM &ndash; 02:30 PM)
+        </button>
+        <button id="counterModalTabDinner" type="button" class="btn btn-sm {% if current_meal_session == 'Dinner' %}btn-primary{% else %}btn-outline{% endif %}" onclick="switchCounterQr('Dinner')">
+          🌙 Dinner QR (07:30 PM &ndash; 10:00 PM)
+        </button>
+      </div>
+
+      <!-- Counter QR Code Container -->
+      <div style="background: #ffffff; padding: 20px; border-radius: var(--radius-lg); display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.35); margin-bottom: 14px;">
+        <img id="counterQrImg"
+             src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ (counter_qr_lunch if current_meal_session == 'Lunch' else counter_qr_dinner)|urlencode }}&margin=4" 
+             alt="Mess Hall Attendance QR Code"
+             style="width: 250px; height: 250px; display: block; border-radius: 6px;">
+      </div>
+
+      <div id="counterQrLabel" style="font-size: 13px; font-weight: 700; color: var(--accent-orange); font-family: monospace;">
+        CODE: {{ counter_qr_lunch if current_meal_session == 'Lunch' else counter_qr_dinner }}
+      </div>
+
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+        Session: <strong id="counterQrSessionLabel">{{ current_meal_session }}</strong> &bull; Date: <strong>{{ selected_date }}</strong>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content: space-between;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="printCounterQr()">
+        🖨️ Print Counter Sign
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('messCounterQrModal')">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Bulk Mark Present/Absent
+  document.getElementById('btnMarkAllPresent')?.addEventListener('click', function() {
+    document.querySelectorAll('input[type="radio"][value="Present"]').forEach(r => r.checked = true);
+  });
+  document.getElementById('btnMarkAllAbsent')?.addEventListener('click', function() {
+    document.querySelectorAll('input[type="radio"][value="Absent"]').forEach(r => r.checked = true);
+  });
+
+  const qrLunch = '{{ counter_qr_lunch }}';
+  const qrDinner = '{{ counter_qr_dinner }}';
+  let activeQrSession = '{{ current_meal_session }}';
+
+  function switchCounterQr(session) {
+    activeQrSession = session;
+    const img = document.getElementById('counterQrImg');
+    const label = document.getElementById('counterQrLabel');
+    const sessLabel = document.getElementById('counterQrSessionLabel');
+    const btnLunch = document.getElementById('counterModalTabLunch');
+    const btnDinner = document.getElementById('counterModalTabDinner');
+
+    const qrData = (session === 'Lunch') ? qrLunch : qrDinner;
+    if (img) img.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}&margin=4`;
+    if (label) label.textContent = `CODE: ${qrData}`;
+    if (sessLabel) sessLabel.textContent = session;
+
+    if (session === 'Lunch') {
+      btnLunch.className = 'btn btn-sm btn-primary';
+      btnDinner.className = 'btn btn-sm btn-outline';
+    } else {
+      btnLunch.className = 'btn btn-sm btn-outline';
+      btnDinner.className = 'btn btn-sm btn-primary';
+    }
+  }
+
+  function printCounterQr() {
+    const qrData = (activeQrSession === 'Lunch') ? qrLunch : qrDinner;
+    const printWindow = window.open('', '_blank', 'width=600,height=700');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Mess Dining Hall Counter QR - ${activeQrSession}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 40px; color: #111; }
+          .qr-card { border: 3px solid #ff6a00; border-radius: 16px; padding: 30px; display: inline-block; max-width: 420px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          h1 { margin: 0 0 8px; font-size: 24px; color: #ff6a00; }
+          h2 { margin: 0 0 16px; font-size: 18px; color: #333; }
+          .code-str { font-family: monospace; font-size: 13px; color: #666; margin-top: 14px; word-break: break-all; }
+          .badge { display: inline-block; background: #e0f2fe; color: #0369a1; padding: 4px 12px; border-radius: 9999px; font-weight: bold; margin-bottom: 16px; font-size: 14px; }
+          @media print { button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="qr-card">
+          <h1>{{ mess_name }}</h1>
+          <h2>Dining Hall Counter Attendance QR</h2>
+          <div class="badge">${activeQrSession === 'Lunch' ? '🌞 Morning / Lunch Session' : '🌙 Night / Dinner Session'}</div>
+          <div>
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&margin=4" style="width: 280px; height: 280px; display: block; margin: 0 auto;">
+          </div>
+          <div class="code-str">${qrData}</div>
+          <p style="margin-top: 16px; font-size: 12px; color: #777;">Date: {{ selected_date }} &bull; Scan using Student Mess Dashboard</p>
+        </div>
+        <div style="margin-top: 20px;">
+          <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; font-weight: bold; background: #ff6a00; color: white; border: none; border-radius: 8px; cursor: pointer;">Print QR Code</button>
+        </div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+  }
+</script>
 {% endblock %}

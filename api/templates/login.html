@@ -183,13 +183,16 @@
       <!-- 2. Traditional / Firebase Email-Password Form -->
       <form action="{{ url_for('login') }}" method="POST" id="loginForm">
         <div class="form-group">
-          <label class="form-label" for="username">Username or Firebase Email</label>
-          <input type="text" class="form-control" id="username" name="username" value="admin" placeholder="admin or you@email.com" required autofocus>
+          <label class="form-label" for="username">Mobile Number, Email or Username</label>
+          <input type="text" class="form-control" id="username" name="username" placeholder="Student Mobile, Email, or Admin username" required autofocus>
+          <div style="font-size: 11.5px; color: #38bdf8; margin-top: 4px;">
+            🎓 <strong>Students:</strong> Enter your registered Mobile Number or Email ID to sign in directly.
+          </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="password">Password</label>
-          <input type="password" class="form-control" id="password" name="password" value="admin123" placeholder="Enter password" required>
+          <label class="form-label" for="password">Password <span style="font-weight: 400; font-size: 11px; color: var(--text-muted);">(Required for Admin only)</span></label>
+          <input type="password" class="form-control" id="password" name="password" placeholder="Admin password (leave blank for student)">
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 18px;">
@@ -213,14 +216,10 @@
             <button type="button" onclick="fillCreds('admin', 'admin123')" style="background: none; border: none; color: var(--accent-orange); font-weight: 700; cursor: pointer; font-size: 11px; text-decoration: underline;">
               Admin
             </button>
-            <span style="color: #78716c;">&bull;</span>
-            <button type="button" onclick="fillCreds('student1', 'password123')" style="background: none; border: none; color: var(--accent-green); font-weight: 700; cursor: pointer; font-size: 11px; text-decoration: underline;">
-              Student
-            </button>
           </div>
         </div>
         <div>
-          Admin: <code>admin</code> / <code>admin123</code> &bull; Student: <code>student1</code> / <code>password123</code>
+          Admin: <code>admin</code> / <code>admin123</code> &bull; Student: Enter any registered <code>Mobile Number</code> or <code>Email ID</code>
         </div>
       </div>
     </div>

@@ -264,14 +264,16 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // 6. Quick Renew Mess Modal Populator
-  window.populateRenewModal = function (studentId, studentName, messType) {
+  window.populateRenewModal = function (studentId, studentName, messType, mealPreference) {
     const sIdInput = document.getElementById('renewStudentId');
     const sNameDisplay = document.getElementById('renewStudentName');
     const typeSelect = document.getElementById('renewMessType');
+    const prefSelect = document.getElementById('renewMealPreference');
 
     if (sIdInput) sIdInput.value = studentId;
     if (sNameDisplay) sNameDisplay.textContent = studentName + ` (${studentId})`;
-    if (typeSelect) typeSelect.value = messType;
+    if (typeSelect && messType) typeSelect.value = messType;
+    if (prefSelect && mealPreference) prefSelect.value = mealPreference;
 
     openModal('renewModal');
   };

@@ -10,6 +10,9 @@
     Welcome to the Mess Control Center &bull; Live Operations Overview
   </div>
   <div class="filter-group">
+    <button class="btn btn-primary btn-sm" onclick="toggleCounterScanner()" id="btnToggleCounterTop" style="background: linear-gradient(135deg, #10b981, #059669); border: none; font-weight: 700;">
+      <span>📷</span> Live Counter Scanner
+    </button>
     <a href="{{ url_for('attendance') }}" class="btn btn-outline btn-sm">
       <span>📅</span> Mark Today's Attendance
     </a>
@@ -19,6 +22,168 @@
     <a href="{{ url_for('absent_approvals') }}" class="btn btn-outline btn-sm">
       <span>⏱️</span> Review Absences ({{ eligible_absences|length }})
     </a>
+  </div>
+</div>
+
+<!-- ===================================================================
+     LIVE MESS COUNTER ATTENDANCE SCANNER TERMINAL
+     =================================================================== -->
+<div class="scanner-container-card" id="adminCounterScannerCard" style="border: 1px solid rgba(16, 185, 129, 0.35); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 18px;">
+    
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+          📷
+        </div>
+        <div>
+          <h3 style="font-size: 19px; font-weight: 800; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 8px;">
+            Live Mess Counter Scanner
+            <span class="scanner-status-pill" id="counterTerminalStatus">
+              <span class="pulse-dot"></span>
+              Counter Terminal Ready
+            </span>
+          </h3>
+          <p style="font-size: 13px; color: var(--text-secondary); margin: 3px 0 0;">
+            Point scanner at student QR passes. Attendance will automatically mark for the selected meal session.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Meal Session Toggle Buttons -->
+    <div style="display: flex; align-items: center; gap: 8px; background: var(--bg-card-elevated); padding: 5px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+      <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); padding-left: 8px;">MEAL SESSION:</span>
+      <button type="button" class="btn btn-sm btn-primary" id="btnAdminSessionLunch" onclick="setAdminMealSession('Lunch')" style="font-weight: 700; font-size: 12.5px;">
+        🌞 Morning / Lunch
+      </button>
+      <button type="button" class="btn btn-sm btn-outline" id="btnAdminSessionDinner" onclick="setAdminMealSession('Dinner')" style="font-weight: 700; font-size: 12.5px;">
+        🌙 Night / Dinner
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Scanner Controls & Viewfinder Area -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start;">
+    
+    <!-- Left: Camera Viewfinder / Hardware Barcode Input -->
+    <div>
+      <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+        <button class="btn btn-primary btn-sm" id="btnStartAdminCam" onclick="startAdminCamera()" style="background: linear-gradient(135deg, #10b981, #059669); border: none;">
+          <span>▶</span> Start Camera Scanner
+        </button>
+        <button class="btn btn-danger btn-sm" id="btnStopAdminCam" onclick="stopAdminCamera()" style="display: none;">
+          <span>⏹</span> Stop Camera
+        </button>
+        <button class="btn btn-outline btn-sm" id="btnFlipAdminCam" onclick="flipAdminCamera()" style="display: none;">
+          <span>🔄</span> Flip Camera
+        </button>
+        <label class="btn btn-outline btn-sm" style="cursor: pointer; margin: 0;">
+          <span>🖼️</span> Scan from File
+          <input type="file" id="adminQrFileInput" accept="image/*" style="display: none;" onchange="handleAdminQRFileUpload(this)">
+        </label>
+      </div>
+
+      <!-- Cyber Viewfinder with Laser Animation -->
+      <div id="adminViewfinderWrap" style="display: none;">
+        <div class="scanner-viewfinder-wrap">
+          <div class="scanner-corner-bracket corner-tl"></div>
+          <div class="scanner-corner-bracket corner-tr"></div>
+          <div class="scanner-corner-bracket corner-bl"></div>
+          <div class="scanner-corner-bracket corner-br"></div>
+          <div class="scanner-laser-line"></div>
+          <div id="admin-qr-reader"></div>
+        </div>
+        <div id="adminScanPrompt" style="font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 6px;">
+          Position student's digital QR pass inside the frame.
+        </div>
+      </div>
+
+      <!-- Hardware Barcode / USB Scanner or Manual Student ID Input -->
+      <div style="margin-top: 14px; background: var(--bg-card-elevated); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <label for="adminManualInput" style="font-size: 12px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">
+          ⌨️ BARCODE / HARDWARE SCANNER / MANUAL INPUT
+        </label>
+        <form onsubmit="handleAdminManualScan(event)" style="display: flex; gap: 8px;">
+          <input type="text" id="adminManualInput" class="form-control" placeholder="Scan barcode or enter Student ID (e.g. STU1001) & press Enter..." autocomplete="off" style="font-size: 13.5px; font-weight: 600;">
+          <button type="submit" class="btn btn-success btn-sm" style="white-space: nowrap; padding: 0 16px;">
+            Verify & Mark
+          </button>
+        </form>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+          Supports USB barcode gun, camera scanning, and direct student ID entry.
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Realtime Student Verification Result Card & Recent Log -->
+    <div>
+      <!-- Live Verification Badge Card -->
+      <div id="adminScanCard" style="display: none; background: var(--bg-card-elevated); border: 2px solid #10b981; border-radius: var(--radius-lg); padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 16px; transition: all 0.25s ease;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; margin-bottom: 14px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div id="adminScanAvatar" style="width: 52px; height: 52px; border-radius: var(--radius-md); background: linear-gradient(135deg, #10b981, #059669); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; flex-shrink: 0;">
+              ✓
+            </div>
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <h4 id="adminScanStudentName" style="font-size: 17px; font-weight: 800; color: #ffffff; margin: 0;">Student Name</h4>
+                <span id="adminScanStatusBadge" class="badge badge-success">Present</span>
+              </div>
+              <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">
+                <span id="adminScanStudentID" style="color: var(--accent-orange); font-weight: 700;">STU1001</span> &bull;
+                <span id="adminScanMessType" class="badge badge-veg">Veg</span>
+              </div>
+            </div>
+          </div>
+          <span id="adminScanSessionPill" class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700; padding: 6px 12px;">
+            Morning / Lunch
+          </span>
+        </div>
+
+        <div id="adminScanAlertMsg" style="font-size: 13px; padding: 10px 14px; border-radius: var(--radius-md); background: rgba(16, 185, 129, 0.12); color: #34d399; font-weight: 600; margin-bottom: 12px;">
+          🎉 Attendance marked successfully!
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; background: rgba(0,0,0,0.25); padding: 12px; border-radius: var(--radius-md);">
+          <div>
+            <span style="color: var(--text-muted);">Enrolled Plan:</span><br>
+            <strong id="adminScanPlanPref" style="color: var(--text-primary);">Both Meals Plan</strong>
+          </div>
+          <div>
+            <span style="color: var(--text-muted);">Days Remaining:</span><br>
+            <strong id="adminScanRemainingDays" style="color: #10b981;">30 Days Left</strong>
+          </div>
+          <div>
+            <span style="color: var(--text-muted);">Subscription Expiry:</span><br>
+            <strong id="adminScanExpiryDate" style="color: var(--text-primary);">2026-11-15</strong>
+          </div>
+          <div>
+            <span style="color: var(--text-muted);">Verification Time:</span><br>
+            <strong id="adminScanTime" style="color: var(--text-primary);">Just Now</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Counter Scans Feed (Last 5 scans) -->
+      <div style="background: var(--bg-card-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <span>📋</span> Live Counter Scans Feed
+          </span>
+          <span id="counterScanCount" class="badge badge-secondary" style="font-size: 11px;">0 Scanned</span>
+        </div>
+
+        <div id="counterScansList" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto;">
+          <div id="emptyCounterMsg" style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 24px 10px;">
+            No students scanned at the counter yet this session. Ready to scan.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
@@ -578,6 +743,384 @@
         }
       }
     });
+  }
+</script>
+
+<!-- Live Mess Counter Scanner Script Engine -->
+<script src="{{ url_for('static', filename='js/html5-qrcode.min.js') }}"></script>
+<script>
+  let adminHtml5QrCode = null;
+  let isAdminScanning = false;
+  let adminCameraFacing = 'environment';
+  let isProcessingAdminScan = false;
+  let currentAdminSession = (new Date().getHours() < 16) ? 'Lunch' : 'Dinner';
+  let counterScanHistory = [];
+  let adminDismissTimer = null;
+
+  // Initialize initial session button state
+  document.addEventListener('DOMContentLoaded', () => {
+    setAdminMealSession(currentAdminSession);
+  });
+
+  // Toggle meal session (Lunch vs Dinner)
+  function setAdminMealSession(session) {
+    currentAdminSession = session;
+    const btnLunch = document.getElementById('btnAdminSessionLunch');
+    const btnDinner = document.getElementById('btnAdminSessionDinner');
+    const pill = document.getElementById('adminScanSessionPill');
+
+    if (session === 'Lunch') {
+      if (btnLunch) { btnLunch.className = 'btn btn-sm btn-primary'; }
+      if (btnDinner) { btnDinner.className = 'btn btn-sm btn-outline'; }
+      if (pill) {
+        pill.textContent = 'Morning / Lunch 🌞';
+        pill.style.background = 'rgba(245, 158, 11, 0.2)';
+        pill.style.color = 'var(--accent-amber)';
+      }
+    } else {
+      if (btnLunch) { btnLunch.className = 'btn btn-sm btn-outline'; }
+      if (btnDinner) { btnDinner.className = 'btn btn-sm btn-primary'; }
+      if (pill) {
+        pill.textContent = 'Night / Dinner 🌙';
+        pill.style.background = 'rgba(99, 102, 241, 0.2)';
+        pill.style.color = '#818cf8';
+      }
+    }
+  }
+
+  // Smooth scroll & open counter scanner
+  function toggleCounterScanner() {
+    const card = document.getElementById('adminCounterScannerCard');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const input = document.getElementById('adminManualInput');
+      if (input) setTimeout(() => input.focus(), 400);
+    }
+  }
+
+  // --- AUDIO FEEDBACK (WEB AUDIO API) --- //
+  function playAdminSuccessChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } catch (e) {}
+  }
+
+  function playAdminWarningTone() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(350, now + 0.1);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } catch (e) {}
+  }
+
+  function playAdminErrorTone() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      const now = ctx.currentTime;
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } catch (e) {}
+  }
+
+  // --- CAMERA CONTROLS --- //
+  async function startAdminCamera() {
+    const wrap = document.getElementById('adminViewfinderWrap');
+    const btnStart = document.getElementById('btnStartAdminCam');
+    const btnStop = document.getElementById('btnStopAdminCam');
+    const btnFlip = document.getElementById('btnFlipAdminCam');
+    const prompt = document.getElementById('adminScanPrompt');
+
+    if (wrap) wrap.style.display = 'block';
+    if (btnStart) btnStart.style.display = 'none';
+    if (btnStop) btnStop.style.display = 'inline-flex';
+    if (btnFlip) btnFlip.style.display = 'inline-flex';
+
+    if (typeof Html5Qrcode === 'undefined') {
+      alert('QR Scanner library not loaded. Please refresh the page.');
+      return;
+    }
+
+    if (!adminHtml5QrCode) {
+      adminHtml5QrCode = new Html5Qrcode("admin-qr-reader");
+    }
+
+    const config = {
+      fps: 12,
+      qrbox: { width: 240, height: 240 },
+      aspectRatio: 1.0
+    };
+
+    try {
+      await adminHtml5QrCode.start(
+        { facingMode: adminCameraFacing },
+        config,
+        onAdminQrScanned,
+        () => {}
+      );
+      isAdminScanning = true;
+      if (prompt) prompt.textContent = 'Camera active. Point at student QR pass to mark attendance.';
+      updateTerminalStatus(true, 'Camera Active & Scanning');
+    } catch (err) {
+      console.warn('Admin camera environment error, trying user camera:', err);
+      try {
+        await adminHtml5QrCode.start({ facingMode: "user" }, config, onAdminQrScanned, () => {});
+        isAdminScanning = true;
+        adminCameraFacing = 'user';
+        updateTerminalStatus(true, 'Front Camera Active');
+      } catch (e) {
+        isAdminScanning = false;
+        alert('Could not access camera. Please allow camera permissions or use hardware/manual input.');
+        stopAdminCamera();
+      }
+    }
+  }
+
+  async function stopAdminCamera() {
+    const wrap = document.getElementById('adminViewfinderWrap');
+    const btnStart = document.getElementById('btnStartAdminCam');
+    const btnStop = document.getElementById('btnStopAdminCam');
+    const btnFlip = document.getElementById('btnFlipAdminCam');
+
+    if (adminHtml5QrCode && isAdminScanning) {
+      try {
+        await adminHtml5QrCode.stop();
+        isAdminScanning = false;
+      } catch (err) {
+        console.warn('Error stopping admin camera:', err);
+      }
+    }
+
+    if (wrap) wrap.style.display = 'none';
+    if (btnStart) btnStart.style.display = 'inline-flex';
+    if (btnStop) btnStop.style.display = 'none';
+    if (btnFlip) btnFlip.style.display = 'none';
+    updateTerminalStatus(true, 'Counter Terminal Ready');
+  }
+
+  async function flipAdminCamera() {
+    adminCameraFacing = (adminCameraFacing === 'environment') ? 'user' : 'environment';
+    if (isAdminScanning) {
+      await stopAdminCamera();
+      await startAdminCamera();
+    }
+  }
+
+  // --- FILE UPLOAD SCANNER --- //
+  async function handleAdminQRFileUpload(fileInput) {
+    if (!fileInput.files || fileInput.files.length === 0) return;
+    const file = fileInput.files[0];
+    let fileScanner = adminHtml5QrCode;
+    if (!fileScanner) {
+      fileScanner = new Html5Qrcode("admin-qr-reader");
+    }
+
+    try {
+      const decodedText = await fileScanner.scanFile(file, true);
+      processAdminAttendanceScan(decodedText);
+    } catch (err) {
+      playAdminErrorTone();
+      alert('Could not detect a valid QR code in the uploaded image.');
+    } finally {
+      fileInput.value = '';
+    }
+  }
+
+  // --- HARDWARE BARCODE / MANUAL INPUT --- //
+  function handleAdminManualScan(event) {
+    event.preventDefault();
+    const input = document.getElementById('adminManualInput');
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) return;
+    processAdminAttendanceScan(val);
+    input.value = '';
+  }
+
+  function onAdminQrScanned(decodedText) {
+    if (isProcessingAdminScan) return;
+    processAdminAttendanceScan(decodedText);
+  }
+
+  // --- CORE ATTENDANCE PROCESSING & VERIFICATION --- //
+  async function processAdminAttendanceScan(qrString) {
+    if (isProcessingAdminScan) return;
+    isProcessingAdminScan = true;
+
+    try {
+      const resp = await fetch('{{ url_for("api_qr_checkin") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          qr_code: qrString,
+          meal_session: currentAdminSession
+        })
+      });
+
+      const data = await resp.json();
+      displayAdminScanResult(data);
+
+    } catch (netErr) {
+      console.error('Scan checkin error:', netErr);
+      playAdminErrorTone();
+      alert('Network error communicating with server.');
+    } finally {
+      setTimeout(() => {
+        isProcessingAdminScan = false;
+      }, 1400);
+    }
+  }
+
+  // Update terminal status indicator
+  function updateTerminalStatus(active, text) {
+    const el = document.getElementById('counterTerminalStatus');
+    if (!el) return;
+    el.innerHTML = `<span class="pulse-dot"></span> ${text}`;
+  }
+
+  // Display Student Verification Badge Card
+  function displayAdminScanResult(data) {
+    const card = document.getElementById('adminScanCard');
+    const avatar = document.getElementById('adminScanAvatar');
+    const nameEl = document.getElementById('adminScanStudentName');
+    const badgeEl = document.getElementById('adminScanStatusBadge');
+    const stuIdEl = document.getElementById('adminScanStudentID');
+    const messTypeEl = document.getElementById('adminScanMessType');
+    const alertMsg = document.getElementById('adminScanAlertMsg');
+    const planPrefEl = document.getElementById('adminScanPlanPref');
+    const remDaysEl = document.getElementById('adminScanRemainingDays');
+    const expDateEl = document.getElementById('adminScanExpiryDate');
+    const timeEl = document.getElementById('adminScanTime');
+
+    if (!card) return;
+    card.style.display = 'block';
+
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    if (data.success) {
+      if (data.already_marked) {
+        playAdminWarningTone();
+        card.style.borderColor = 'var(--accent-amber)';
+        avatar.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+        avatar.textContent = 'ℹ️';
+        badgeEl.className = 'badge badge-warning';
+        badgeEl.textContent = 'Already Checked In';
+        alertMsg.style.background = 'rgba(245, 158, 11, 0.15)';
+        alertMsg.style.color = 'var(--accent-amber)';
+        alertMsg.textContent = data.message;
+      } else {
+        playAdminSuccessChime();
+        card.style.borderColor = '#10b981';
+        avatar.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        avatar.textContent = '✓';
+        badgeEl.className = 'badge badge-success';
+        badgeEl.textContent = 'Verified Present';
+        alertMsg.style.background = 'rgba(16, 185, 129, 0.15)';
+        alertMsg.style.color = '#34d399';
+        alertMsg.textContent = data.message;
+      }
+
+      nameEl.textContent = data.student_name || 'Student';
+      stuIdEl.textContent = data.student_id;
+      messTypeEl.textContent = data.mess_type || 'Veg';
+      messTypeEl.className = (data.mess_type === 'Veg') ? 'badge badge-veg' : 'badge badge-nonveg';
+
+      const prefText = (data.meal_preference === 'Lunch') ? '🌞 1-Time Morning Only' :
+                       (data.meal_preference === 'Dinner') ? '🌙 1-Time Night Only' : '⭐ Both Meals';
+      planPrefEl.textContent = prefText;
+      remDaysEl.textContent = `${data.remaining_days || 0} Days Left`;
+      expDateEl.textContent = data.expiry_date || 'Active';
+      timeEl.textContent = nowTime;
+
+      addRecentScanFeed(data.student_id, data.student_name, data.mess_type, currentAdminSession, nowTime, data.already_marked ? 'Already Marked' : 'Present');
+
+    } else {
+      playAdminErrorTone();
+      card.style.borderColor = 'var(--accent-red)';
+      avatar.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+      avatar.textContent = '✕';
+      badgeEl.className = 'badge badge-danger';
+      badgeEl.textContent = 'Rejected';
+      alertMsg.style.background = 'rgba(239, 68, 68, 0.15)';
+      alertMsg.style.color = '#f87171';
+      alertMsg.textContent = data.message || 'Verification Failed';
+
+      nameEl.textContent = data.student_name || data.student_id || 'Verification Failed';
+      stuIdEl.textContent = data.student_id || 'N/A';
+      timeEl.textContent = nowTime;
+
+      addRecentScanFeed(data.student_id || 'ERR', data.student_name || 'Unknown', 'N/A', currentAdminSession, nowTime, 'Rejected');
+    }
+
+    // Auto-clear notification after 4.5 seconds for next student
+    if (adminDismissTimer) clearTimeout(adminDismissTimer);
+    adminDismissTimer = setTimeout(() => {
+      card.style.opacity = '0.7';
+    }, 4500);
+  }
+
+  // Prepend to Live Recent Scans Feed
+  function addRecentScanFeed(studentId, name, messType, session, time, status) {
+    const list = document.getElementById('counterScansList');
+    const emptyMsg = document.getElementById('emptyCounterMsg');
+    const countBadge = document.getElementById('counterScanCount');
+    if (!list) return;
+
+    if (emptyMsg) emptyMsg.style.display = 'none';
+
+    counterScanHistory.unshift({ studentId, name, messType, session, time, status });
+    if (countBadge) countBadge.textContent = `${counterScanHistory.length} Scanned`;
+
+    const statusBadgeClass = (status === 'Present') ? 'badge badge-success' :
+                             (status === 'Already Marked') ? 'badge badge-warning' : 'badge badge-danger';
+
+    const item = document.createElement('div');
+    item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: rgba(0,0,0,0.25); border-radius: var(--radius-md); border-left: 3px solid ' + (status === 'Present' ? '#10b981' : status === 'Already Marked' ? 'var(--accent-amber)' : 'var(--accent-red)');
+    item.innerHTML = `
+      <div>
+        <div style="font-weight: 700; font-size: 13px; color: var(--text-primary);">${name} <span style="color: var(--accent-orange); font-size: 11.5px;">(${studentId})</span></div>
+        <div style="font-size: 11.5px; color: var(--text-muted);">${session} &bull; ${time}</div>
+      </div>
+      <div>
+        <span class="${statusBadgeClass}" style="font-size: 11px;">${status}</span>
+      </div>
+    `;
+
+    list.insertBefore(item, list.firstChild);
+
+    // Keep at most 10 items in DOM
+    if (list.children.length > 10) {
+      list.removeChild(list.lastChild);
+    }
   }
 </script>
 {% endblock %}

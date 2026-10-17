@@ -19,6 +19,13 @@
             <span class="badge {% if student.mess_type == 'Veg' %}badge-veg{% else %}badge-nonveg{% endif %}">
               {{ student.mess_type }} Mess
             </span>
+            {% if student.meal_preference == 'Lunch' %}
+              <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3);">🌞 1 Time: Morning / Lunch</span>
+            {% elif student.meal_preference == 'Dinner' %}
+              <span class="badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);">🌙 1 Time: Night / Dinner</span>
+            {% else %}
+              <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">⭐ Both Meals</span>
+            {% endif %}
             {% if student.status == 'Active' %}
               <span class="badge badge-active">Active</span>
             {% elif student.status == 'Expired' %}
@@ -45,7 +52,7 @@
             💳 Add Payment
           </button>
         {% endif %}
-        <button class="btn btn-primary btn-sm" onclick="populateRenewModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ student.mess_type }}')">
+        <button class="btn btn-primary btn-sm" onclick="populateRenewModal('{{ student.student_id }}', '{{ student.full_name }}', '{{ student.mess_type }}', '{{ student.meal_preference }}')">
           🔄 Renew Plan
         </button>
         <form action="{{ url_for('toggle_student_status', student_id=student.student_id) }}" method="POST" style="display:inline;">
@@ -366,6 +373,14 @@
           <select class="form-control form-select" name="mess_type" id="edit_mess_type" required>
             <option value="Veg" {% if student.mess_type == 'Veg' %}selected{% endif %}>Pure Veg Mess</option>
             <option value="Non-Veg" {% if student.mess_type == 'Non-Veg' %}selected{% endif %}>Non-Veg Mess</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="edit_meal_preference">Meal Preference / Session <span class="required">*</span></label>
+          <select class="form-control form-select" name="meal_preference" id="edit_meal_preference" required>
+            <option value="Both" {% if student.meal_preference == 'Both' %}selected{% endif %}>⭐ Both: Morning & Night (Lunch & Dinner)</option>
+            <option value="Lunch" {% if student.meal_preference == 'Lunch' %}selected{% endif %}>🌞 1 Time: Morning / Lunch Only (1 Month / 30 Days)</option>
+            <option value="Dinner" {% if student.meal_preference == 'Dinner' %}selected{% endif %}>🌙 1 Time: Night / Dinner Only (1 Month / 30 Days)</option>
           </select>
         </div>
       </div>
